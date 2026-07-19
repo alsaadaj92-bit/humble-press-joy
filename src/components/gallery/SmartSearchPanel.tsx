@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Brain, Loader2, Sparkles, Trash2, Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import type { MockPhoto } from "@/lib/mockPhotos";
+import { picsumThumb } from "@/lib/mockPhotos";
 import {
   allEmbeddings,
   clearEmbeddings,
   countEmbeddings,
   embedImageFromUrl,
   embedText,
-  getEmbedding,
   loadClip,
   putEmbedding,
   cosine,
