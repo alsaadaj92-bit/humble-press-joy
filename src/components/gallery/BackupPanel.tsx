@@ -22,6 +22,26 @@ export function BackupPanel() {
   const [busy, setBusy] = useState(false);
   const [includeSecrets, setIncludeSecrets] = useState(false);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const [autoBackup, setAutoBackup] = useState<AutoBackupSettings | null>(null);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    getAutoBackupSettings().then(setAutoBackup);
+    if (notificationsSupported()) setNotifPerm(notificationsPermission());
+  }, []);
+
+  const toggleAutoBackup = async (enabled: boolean) => {
+    const next = await setAutoBackupSettings({ enabled });
+    setAutoBackup(next);
+    toast.success(enabled ? "تم تفعيل النسخ الأسبوعي" : "تم إيقاف النسخ التلقائي");
+  };
+
+  const enableNotifications = async () => {
+    const p = await requestNotificationPermission();
+    setNotifPerm(p);
+    if (p === "granted") toast.success("تم تفعيل الإشعارات");
+    else toast.error("رُفضت صلاحية الإشعارات — يمكن تفعيلها من إعدادات المتصفح");
+  };
 
   const doExport = async () => {
     try {
