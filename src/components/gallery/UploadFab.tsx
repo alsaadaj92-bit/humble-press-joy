@@ -142,8 +142,8 @@ export function UploadFab() {
 
       <button
         onClick={openPicker}
-        className="fixed bottom-6 left-6 z-30 flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95"
-        style={{ boxShadow: "var(--shadow-fab)" }}
+        className="fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95 md:bottom-6 md:left-6"
+        style={{ boxShadow: "var(--shadow-fab)", marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <Plus className="h-5 w-5" />
         <span>{active ? `رفع عبر ${labelOf(active)}` : "استيراد صور"}</span>
