@@ -7,7 +7,7 @@ const items = [
   { id: "memories", label: "الذكريات", icon: Sparkles },
   { id: "smart", label: "بحث", icon: Search },
   { id: "sharing", label: "مشاركة", icon: Share2 },
-  { id: "albums", label: "المكتبة", icon: LibraryBig },
+  { id: "library", label: "المكتبة", icon: LibraryBig },
 ];
 
 export function MobileNav({

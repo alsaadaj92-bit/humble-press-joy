@@ -34,6 +34,9 @@ import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel"
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
 import { QuickChips } from "@/components/gallery/QuickChips";
+import { LibraryHub } from "@/components/gallery/LibraryHub";
+import { DensityToggle } from "@/components/gallery/DensityToggle";
+import { useGridDensity } from "@/hooks/useGridDensity";
 import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -73,6 +76,7 @@ const Index = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { density, setDensity } = useGridDensity();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
@@ -313,7 +317,14 @@ const Index = () => {
           </div>
         )}
 
-        <QuickChips active={activeSection} onSelect={setActiveSection} />
+        <div className="flex items-center gap-2 border-b border-border/60 bg-background/80 backdrop-blur">
+          <div className="min-w-0 flex-1">
+            <QuickChips active={activeSection} onSelect={setActiveSection} />
+          </div>
+          <div className="shrink-0 pl-2 pr-4 md:pr-8">
+            <DensityToggle density={density} onChange={setDensity} />
+          </div>
+        </div>
 
         <div className="px-4 py-6 md:px-8 md:py-8">
           {selection.size > 0 && (
@@ -358,6 +369,7 @@ const Index = () => {
                 activeId={lightboxIndex != null ? visible[lightboxIndex]?.id ?? null : null}
                 section={activeSection}
                 query={query}
+                density={density}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
@@ -460,6 +472,15 @@ const Index = () => {
 
 
 
+          {activeSection === "library" && (
+            <>
+              <SectionHero
+                title="المكتبة"
+                subtitle="كل مجموعاتك وأدواتك في مكان واحد — على غرار Google Photos"
+              />
+              <LibraryHub onNavigate={setActiveSection} />
+            </>
+          )}
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
             <>
@@ -476,7 +497,7 @@ const Index = () => {
             <>
               <SectionHero
                 title="المشاركة"
-                subtitle="ألبومات مشتركة، روابط، ومكتبة الشريك — كلها ضمن خارطة الطريق"
+                subtitle="مجموعات مشاركة محلية، ورموز نقل بين أجهزتك، ومشاركة عبر تطبيقات النظام — دون سحابة"
               />
               <SharingPanel />
             </>

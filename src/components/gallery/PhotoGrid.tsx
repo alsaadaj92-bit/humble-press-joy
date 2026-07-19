@@ -5,6 +5,7 @@ import type { PhotoState } from "@/lib/photoDb";
 import { formatDuration } from "@/lib/video";
 import { monthKey } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
+import { densityColClasses, type GridDensity } from "@/hooks/useGridDensity";
 import { EmptyState } from "./EmptyState";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
@@ -26,6 +27,8 @@ interface PhotoGridProps {
   section?: string;
   /** Optional current search query — shows a "no results" empty state. */
   query?: string;
+  /** Tile density (columns) — persisted via useGridDensity. */
+  density?: GridDensity;
 }
 
 export function PhotoGrid({
@@ -39,7 +42,9 @@ export function PhotoGrid({
   activeId,
   section,
   query,
+  density = "comfortable",
 }: PhotoGridProps) {
+  const colClasses = densityColClasses(density);
   const groups = useMemo(() => groupByDate(photos), [photos]);
   const indexOf = useMemo(() => {
     const map = new Map<string, number>();
@@ -127,10 +132,10 @@ export function PhotoGrid({
         const mKey = first ? monthKey(first.date) : undefined;
         return (
         <section key={group.label} data-month={mKey}>
-          <h2 className="mb-2 px-1 text-[13px] font-medium text-foreground/80">
+          <h2 className="sticky top-0 z-10 -mx-1 mb-2 bg-background/85 px-2 py-1 text-[13px] font-medium text-foreground/80 backdrop-blur">
             {group.label}
           </h2>
-          <div className="masonry gap-1 sm:gap-1.5 masonry-col-3 sm:masonry-col-4 md:masonry-col-5 lg:masonry-col-6 xl:masonry-col-7">
+          <div className={cn("masonry gap-1 sm:gap-1.5", colClasses)}>
             {group.items.map((photo) => {
               const idx = indexOf.get(photo.id)!;
               const state = states.get(photo.id);
