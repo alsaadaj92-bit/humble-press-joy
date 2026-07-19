@@ -311,6 +311,8 @@ const Index = () => {
           </div>
         )}
 
+        <QuickChips active={activeSection} onSelect={setActiveSection} />
+
         <div className="px-4 py-6 md:px-8 md:py-8">
           {selection.size > 0 && (
             <SelectionToolbar
