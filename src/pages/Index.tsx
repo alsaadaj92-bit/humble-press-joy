@@ -36,6 +36,9 @@ import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
+import { useAutoPipelineLoop } from "@/hooks/useAutoPipeline";
+import { AutoPipelineConsent } from "@/components/gallery/AutoPipelineConsent";
+import { AutoPipelineBadge } from "@/components/gallery/AutoPipelineBadge";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 import { buildTimelineBuckets } from "@/lib/timeline";
 
@@ -82,6 +85,7 @@ const Index = () => {
   const uploadedPhotos = useResolvedAssets(assets, providers);
   useSyncLoop();
   useTrashSweeper();
+  useAutoPipelineLoop();
 
 
   // Uploaded assets first (newest), then mocks — sorted by date desc.
@@ -270,6 +274,10 @@ const Index = () => {
           onOpenDrawer={() => setDrawerOpen(true)}
           onSelectSection={setActiveSection}
         />
+        <div className="pointer-events-none absolute right-4 top-14 z-30 md:top-16">
+          <div className="pointer-events-auto"><AutoPipelineBadge /></div>
+        </div>
+        <AutoPipelineConsent />
         {queryChips.length > 0 && (
           <div className="flex flex-wrap gap-1.5 border-b border-border bg-background/60 px-4 py-2 md:px-8">
             {queryChips.map((c) => (
