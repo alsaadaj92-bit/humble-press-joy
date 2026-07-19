@@ -137,8 +137,7 @@ function pickMimeType(): string {
     "video/webm",
   ];
   for (const m of cands) {
-    // @ts-expect-error isTypeSupported exists on MediaRecorder
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported?.(m)) return m;
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m)) return m;
   }
   return "video/webm";
 }
