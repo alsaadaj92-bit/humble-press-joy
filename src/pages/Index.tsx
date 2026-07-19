@@ -378,6 +378,20 @@ const Index = () => {
             </>
           )}
 
+          {(activeSection === "categories" ||
+            activeSection === "videos" ||
+            activeSection === "selfies" ||
+            activeSection === "screenshots" ||
+            activeSection === "documents") && (
+            <>
+              <SectionHero
+                title="التصنيفات"
+                subtitle="فرز تلقائي محلي: فيديوهات، سيلفي، لقطات شاشة، ومستندات — بدون أي إرسال للسحابة"
+              />
+              <CategoriesPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
+            </>
+          )}
+
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
             <>
