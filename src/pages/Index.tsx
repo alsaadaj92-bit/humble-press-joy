@@ -21,6 +21,7 @@ import { useProviders } from "@/hooks/useProviders";
 import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
+import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 
 
 const Index = () => {
@@ -48,6 +49,9 @@ const Index = () => {
     );
   }, [uploadedPhotos, mockPhotos]);
 
+  const parsedQuery = useMemo(() => parseQuery(query), [query]);
+  const queryChips = useMemo(() => describeQuery(parsedQuery), [parsedQuery]);
+
   const visible = useMemo<MockPhoto[]>(() => {
     let list = allPhotos;
     list = list.filter((p) => {
@@ -69,11 +73,10 @@ const Index = () => {
       }
     });
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q));
+      list = list.filter((p) => matchPhoto(p, parsedQuery, { states }));
     }
     return list;
-  }, [allPhotos, query, states, activeSection]);
+  }, [allPhotos, query, parsedQuery, states, activeSection]);
 
   useEffect(() => {
     setSelection(new Set());
