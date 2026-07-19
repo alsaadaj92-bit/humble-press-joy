@@ -23,6 +23,8 @@ import {
 } from "@/lib/albums";
 import { getActiveProviderKind } from "@/lib/providers";
 import { encryptFile, isUnlocked as isE2EEUnlocked, isE2EEConfigured } from "@/lib/crypto";
+import { compressImage } from "@/lib/compress";
+
 
 
 const SETTINGS_KEY = "syncSettings";
