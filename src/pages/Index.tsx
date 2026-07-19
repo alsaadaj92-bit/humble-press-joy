@@ -34,6 +34,9 @@ import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel"
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
 import { QuickChips } from "@/components/gallery/QuickChips";
+import { LibraryHub } from "@/components/gallery/LibraryHub";
+import { DensityToggle } from "@/components/gallery/DensityToggle";
+import { useGridDensity } from "@/hooks/useGridDensity";
 import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -73,6 +76,7 @@ const Index = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { density, setDensity } = useGridDensity();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
