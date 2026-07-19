@@ -495,15 +495,15 @@ function PrivacySection() {
     if (!confirm("سيتم مسح كل الميتاداتا محلياً (الحالات، الألبومات، مراجع الأصول، الطوابير). الملفات على المزوّد لن تُمسّ. متابعة؟")) return;
     await Promise.all([
       photoDb.assets.clear(),
-      photoDb.photoStates.clear(),
+      photoDb.states.clear(),
       photoDb.albums.clear(),
-      photoDb.albumAssets.clear(),
+      photoDb.albumMembers.clear(),
       photoDb.syncJobs.clear(),
       photoDb.topicRules.clear(),
       photoDb.ocr.clear(),
       photoDb.embeddings.clear(),
       photoDb.faces.clear(),
-      photoDb.faceClusters.clear(),
+      photoDb.persons.clear(),
     ].map((p) => p.catch(() => null)));
     toast.success("تم مسح الميتاداتا المحلية");
     setTimeout(() => window.location.reload(), 800);
