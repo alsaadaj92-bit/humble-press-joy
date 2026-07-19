@@ -39,6 +39,7 @@ const Index = () => {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
 
   const { states, setFavorite, setArchived, trash, restore } = usePhotoStates();
   const { providers } = useProviders();
