@@ -27,7 +27,9 @@ import {
 } from "@/lib/providers/telegram";
 import { localServerTest } from "@/lib/providers/localServer";
 import { LOCAL_SERVER_CODE, LOCAL_SERVER_PACKAGE_JSON } from "@/lib/serverCode";
+import { TopicRulesPanel } from "@/components/gallery/TopicRulesPanel";
 import { cn } from "@/lib/utils";
+
 
 const TABS: { kind: ProviderKind; label: string; icon: typeof Cloud }[] = [
   { kind: "telegram", label: "تيليجرام", icon: Send },
@@ -379,9 +381,13 @@ function TelegramForm({
           )}
         </div>
       </StepCard>
+
+      {/* Topic routing (Forum groups) */}
+      <TopicRulesPanel />
     </div>
   );
 }
+
 
 function StepCard({
   n,

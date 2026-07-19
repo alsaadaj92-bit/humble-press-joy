@@ -34,9 +34,14 @@ export async function telegramSendDocument(
   botToken: string,
   chatId: string,
   file: File,
+  opts?: { messageThreadId?: number; caption?: string },
 ): Promise<TgSendResult> {
   const form = new FormData();
   form.append("chat_id", chatId);
+  if (opts?.messageThreadId !== undefined) {
+    form.append("message_thread_id", String(opts.messageThreadId));
+  }
+  if (opts?.caption) form.append("caption", opts.caption);
   form.append("document", file, file.name);
   const res = await tg<{
     message_id: number;
@@ -54,6 +59,7 @@ export async function telegramSendDocument(
     height: photo?.height ?? doc?.thumb?.height,
   };
 }
+
 
 export async function telegramGetFilePath(botToken: string, fileId: string) {
   const res = await tg<{ file_path: string }>(

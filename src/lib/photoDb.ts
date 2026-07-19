@@ -48,11 +48,67 @@ export interface KV {
   value: string;
 }
 
+// --- Telegram topic routing -------------------------------------------------
+export type TopicRuleKind =
+  | "by-year"
+  | "by-year-month"
+  | "by-camera"
+  | "by-has-gps"
+  | "default";
+
+export interface TopicRule {
+  id: string;              // uuid
+  topicId: number;         // Telegram message_thread_id
+  topicName: string;       // display name
+  kind: TopicRuleKind;
+  match?: string;          // for by-year "2024", by-year-month "2024-06", by-camera "Canon EOS R6", by-has-gps "yes"|"no"
+  priority: number;        // lower = evaluated first
+}
+
+// --- Sync engine ------------------------------------------------------------
+export type SyncStatus = "pending" | "uploading" | "done" | "failed" | "paused";
+
+export interface SyncJob {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileMime: string;
+  blob: Blob;              // stored locally in IndexedDB — never sent anywhere except the chosen provider
+  provider: ProviderKind;
+  status: SyncStatus;
+  attempts: number;
+  lastError?: string;
+  createdAt: number;
+  updatedAt: number;
+  progress?: number;       // 0..1
+  assetId?: string;        // set when done
+}
+
+export type SyncMode = "manual" | "auto-on-import" | "auto-interval";
+
+export interface SyncSettings {
+  mode: SyncMode;
+  intervalMinutes: number;    // used when mode = auto-interval
+  wifiOnly: boolean;
+  maxFileMb: number;
+  paused: boolean;
+}
+
+export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
+  mode: "auto-on-import",
+  intervalMinutes: 15,
+  wifiOnly: false,
+  maxFileMb: 200,
+  paused: false,
+};
+
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
   providers!: Table<ProviderConfig, ProviderKind>;
   assets!: Table<MediaAsset, string>;
   kv!: Table<KV, string>;
+  topicRules!: Table<TopicRule, string>;
+  syncJobs!: Table<SyncJob, string>;
 
   constructor() {
     super("localgallery-pro");
@@ -66,8 +122,17 @@ class PhotoDatabase extends Dexie {
       assets: "id, provider, date, createdAt",
       kv: "key",
     });
+    this.version(4).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+    });
   }
 }
+
 
 export const photoDb = new PhotoDatabase();
 
