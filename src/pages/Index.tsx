@@ -30,6 +30,7 @@ import { PwaStatus } from "@/components/gallery/PwaStatus";
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
+import { SettingsPage } from "@/components/gallery/SettingsPage";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
