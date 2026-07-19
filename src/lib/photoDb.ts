@@ -160,6 +160,15 @@ export interface PersonRow {
   hidden?: boolean;
 }
 
+// --- OCR (local text extraction, on-device only) ---------------------------
+export interface OcrRow {
+  id: string;              // assetId (or photoId)
+  text: string;
+  lang: string;            // "ara+eng"
+  confidence: number;      // 0..100
+  updatedAt: number;
+}
+
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
   providers!: Table<ProviderConfig, ProviderKind>;
@@ -172,6 +181,8 @@ class PhotoDatabase extends Dexie {
   embeddings!: Table<EmbeddingRow, string>;
   faces!: Table<FaceRow, string>;
   persons!: Table<PersonRow, string>;
+  ocr!: Table<OcrRow, string>;
+
 
   constructor() {
     super("localgallery-pro");
