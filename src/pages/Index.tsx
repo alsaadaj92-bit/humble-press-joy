@@ -97,6 +97,9 @@ const Index = () => {
       const inTrash = !!s?.trashedAt;
       const isArchived = !!s?.archived;
       const isFavorite = !!s?.favorite;
+      const isLocked = !!s?.locked;
+      // Locked items only ever appear inside the Locked Folder section.
+      if (isLocked && activeSection !== "locked") return false;
       switch (activeSection) {
         case "trash":
           return inTrash;
@@ -104,6 +107,8 @@ const Index = () => {
           return isArchived && !inTrash;
         case "favorites":
           return isFavorite && !inTrash && !isArchived;
+        case "locked":
+          return isLocked && !inTrash;
         case "photos":
           return !inTrash && !isArchived;
         default:
