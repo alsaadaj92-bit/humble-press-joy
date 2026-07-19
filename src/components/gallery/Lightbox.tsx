@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Download, Info, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Info, Pencil, X, ZoomIn, ZoomOut } from "lucide-react";
 import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
 import { photoDb } from "@/lib/photoDb";
 import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
 import { MiniMap } from "./MiniMap";
+import { PhotoEditor } from "./PhotoEditor";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -16,6 +17,7 @@ interface LightboxProps {
 export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProps) {
   const [zoomed, setZoomed] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [exif, setExif] = useState<ExifData | null>(null);
 
   const open = index !== null;
@@ -119,6 +121,15 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
           >
             <Info className="h-5 w-5" />
           </button>
+          {photo.kind !== "video" && (
+            <button
+              onClick={() => setEditing(true)}
+              className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition hover:bg-white/10"
+              aria-label="تحرير"
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+          )}
           <a
             href={fullSrc}
             download={photo.name}
@@ -129,6 +140,14 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
           </a>
         </div>
       </div>
+
+      {editing && (
+        <PhotoEditor
+          src={fullSrc}
+          fileName={photo.name}
+          onClose={() => setEditing(false)}
+        />
+      )}
 
       {/* Prev / Next (mirrored for RTL: chevron-right = previous) */}
       <button
