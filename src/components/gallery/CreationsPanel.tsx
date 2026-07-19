@@ -37,11 +37,23 @@ export function CreationsPanel({ photos }: Props) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [output, setOutput] = useState<{ url: string; kind: CreationKind } | null>(null);
+  const { states } = usePhotoStates();
 
   const candidates = useMemo(
     () => photos.filter((p) => p.kind !== "video").slice(0, 80),
     [photos],
   );
+
+  const autoPick = (mode: HighlightMode) => {
+    const pick = pickHighlight(photos, states, mode, Math.min(count, 12));
+    if (pick.photos.length < 2) {
+      toast.error(pick.title);
+      return;
+    }
+    setSelected(new Set(pick.photos.map((p) => p.id)));
+    toast.success(`${pick.title} — ${pick.subtitle}`);
+  };
+
 
   const chosen = useMemo(() => {
     if (selected.size > 0) return candidates.filter((p) => selected.has(p.id));
