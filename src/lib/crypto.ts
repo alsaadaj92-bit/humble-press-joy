@@ -163,12 +163,12 @@ export async function encryptFile(file: File): Promise<{ blob: Blob; meta: Encry
   const rawFileKey = new Uint8Array(await crypto.subtle.exportKey("raw", fileKey));
   const wrapIv = crypto.getRandomValues(new Uint8Array(12));
   const wrappedKey = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: wrapIv }, sessionKey, rawFileKey),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: bs(wrapIv) }, sessionKey, bs(rawFileKey)),
   );
   const fileIv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = new Uint8Array(await file.arrayBuffer());
+  const plaintext = new Uint8Array(await new Response(file).arrayBuffer());
   const ciphertext = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: fileIv }, fileKey, plaintext),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: bs(fileIv) }, fileKey, bs(plaintext)),
   );
 
   const header = new Uint8Array(4 + 1 + 1 + 12 + 12 + 2 + wrappedKey.length);
@@ -194,7 +194,8 @@ export async function encryptFile(file: File): Promise<{ blob: Blob; meta: Encry
 
 export async function decryptBlob(encrypted: Blob, meta: EncryptionMeta): Promise<Blob> {
   if (!sessionKey) throw new Error("التشفير مقفل — افتح القفل أولاً");
-  const buf = new Uint8Array(await encrypted.arrayBuffer());
+  const buf = new Uint8Array(await new Response(encrypted).arrayBuffer());
+
   if (buf.length < 32) throw new Error("ملف مشفّر تالف");
   for (let i = 0; i < 4; i++) {
     if (buf[i] !== MAGIC[i]) throw new Error("ليس ملفاً مشفراً بصيغة LocalGallery");
