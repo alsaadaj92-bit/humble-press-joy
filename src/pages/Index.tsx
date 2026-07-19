@@ -263,46 +263,25 @@ const Index = () => {
         {showScrubber && (
           <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
         )}
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
-          <button
-            className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
-            aria-label="القائمة"
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          <div className="flex flex-1 flex-col gap-1">
-            <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث... جرّب: year:2024 is:favorite has:gps camera:canon"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-            {queryChips.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 px-2">
-                {queryChips.map((c) => (
-                  <span
-                    key={c}
-                    className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            )}
+        <TopBar
+          query={query}
+          onQueryChange={setQuery}
+          searchInputRef={searchInputRef}
+          onOpenDrawer={() => setDrawerOpen(true)}
+          onSelectSection={setActiveSection}
+        />
+        {queryChips.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 border-b border-border bg-background/60 px-4 py-2 md:px-8">
+            {queryChips.map((c) => (
+              <span
+                key={c}
+                className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary"
+              >
+                {c}
+              </span>
+            ))}
           </div>
-
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
-              وضع خاص · بدون سحابة
-            </span>
-          </div>
-        </header>
+        )}
 
         <div className="px-4 py-6 md:px-8 md:py-8">
           {selection.size > 0 && (
