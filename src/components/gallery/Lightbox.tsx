@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Info, X, ZoomIn, ZoomOut } from "lucide-react";
 import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
+import { photoDb } from "@/lib/photoDb";
+import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -13,9 +15,24 @@ interface LightboxProps {
 export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProps) {
   const [zoomed, setZoomed] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [exif, setExif] = useState<ExifData | null>(null);
 
   const open = index !== null;
   const photo = open ? photos[index!] : null;
+
+  useEffect(() => {
+    if (!photo) {
+      setExif(null);
+      return;
+    }
+    let cancelled = false;
+    photoDb.states.get(photo.id).then((s) => {
+      if (!cancelled) setExif(s?.exif ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photo]);
 
   const goPrev = useCallback(() => {
     if (index === null) return;
@@ -153,27 +170,60 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
 
       {/* Info panel */}
       {showInfo && (
-        <div className="absolute inset-y-0 left-0 z-10 w-72 border-l border-border bg-card/95 p-5 text-sm backdrop-blur">
+        <div className="scrollbar-thin absolute inset-y-0 left-0 z-10 w-80 overflow-y-auto border-l border-border bg-card/95 p-5 text-sm backdrop-blur">
           <h3 className="mb-3 text-base font-semibold">تفاصيل الصورة</h3>
-          <dl className="space-y-2 text-muted-foreground">
-            <div>
-              <dt className="text-xs">الاسم</dt>
-              <dd className="text-foreground">{photo.name}</dd>
-            </div>
-            <div>
-              <dt className="text-xs">التاريخ</dt>
-              <dd className="text-foreground">{dateLabel}</dd>
-            </div>
-            <div>
-              <dt className="text-xs">الأبعاد</dt>
-              <dd className="text-foreground">
-                {photo.width} × {photo.height}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs">المصدر</dt>
-              <dd className="text-foreground">Picsum (بيانات تجريبية)</dd>
-            </div>
+          <dl className="space-y-2.5 text-muted-foreground">
+            <InfoField label="الاسم" value={photo.name} />
+            <InfoField
+              label="التاريخ"
+              value={
+                exif?.dateTaken
+                  ? new Intl.DateTimeFormat("ar-EG", {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    }).format(exif.dateTaken)
+                  : dateLabel
+              }
+            />
+            <InfoField
+              label="الأبعاد"
+              value={`${exif?.width ?? photo.width} × ${exif?.height ?? photo.height}`}
+            />
+
+            {exif ? (
+              <>
+                <div className="!mt-4 border-t border-border pt-3 text-xs uppercase tracking-wider text-muted-foreground/70">
+                  EXIF (مستخرج محلياً)
+                </div>
+                <InfoField label="الكاميرا" value={exif.camera ?? "—"} />
+                <InfoField label="العدسة" value={exif.lens ?? "—"} />
+                <InfoField
+                  label="الاتجاه"
+                  value={orientationLabel(exif.orientation) ?? "—"}
+                />
+                {(exif.fNumber || exif.exposureTime || exif.iso || exif.focalLength) && (
+                  <InfoField
+                    label="الإعدادات"
+                    value={[
+                      exif.fNumber && `f/${exif.fNumber}`,
+                      formatExposure(exif.exposureTime),
+                      exif.iso && `ISO ${exif.iso}`,
+                      exif.focalLength && `${exif.focalLength}mm`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                )}
+                {exif.gps && (
+                  <InfoField
+                    label="الموقع"
+                    value={`${exif.gps.lat.toFixed(5)}, ${exif.gps.lon.toFixed(5)}`}
+                  />
+                )}
+              </>
+            ) : (
+              <InfoField label="المصدر" value="Picsum (بدون EXIF)" />
+            )}
           </dl>
         </div>
       )}
@@ -182,6 +232,15 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
       <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs text-white/80">
         {index! + 1} / {photos.length}
       </div>
+    </div>
+  );
+}
+
+function InfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs">{label}</dt>
+      <dd className="text-foreground">{value}</dd>
     </div>
   );
 }
