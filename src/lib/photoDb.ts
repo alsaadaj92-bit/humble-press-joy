@@ -47,7 +47,15 @@ export interface MediaAsset {
   duration?: number;
   /** Data URL poster frame for videos (kept small — under ~100KB). */
   posterDataUrl?: string;
+  /** Present when the stored file is E2EE ciphertext. */
+  encryption?: {
+    alg: "AES-GCM-256";
+    originalName: string;
+    originalMime: string;
+    originalSize: number;
+  };
 }
+
 
 export interface KV {
   key: string;
