@@ -49,6 +49,16 @@ function bs(u: Uint8Array): ArrayBuffer {
   return u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
 }
 
+async function readAll(b: Blob): Promise<Uint8Array> {
+  if (typeof (b as Blob).arrayBuffer === "function") {
+    return new Uint8Array(await b.arrayBuffer());
+  }
+  return new Uint8Array(await new Response(b as BodyInit).arrayBuffer());
+}
+
+  return u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
+}
+
 // --- key derivation --------------------------------------------------------
 async function deriveMasterKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
