@@ -43,6 +43,7 @@ const Index = () => {
   const assets = useMediaAssets();
   const uploadedPhotos = useResolvedAssets(assets, providers);
   useSyncLoop();
+  useTrashSweeper();
 
 
   // Uploaded assets first (newest), then mocks — sorted by date desc.
@@ -183,7 +184,7 @@ const Index = () => {
     },
     favorites: { title: "المفضلة", sub: (n) => `${n} صورة مميّزة` },
     archive: { title: "الأرشيف", sub: (n) => `${n} صورة مؤرشفة` },
-    trash: { title: "سلة المحذوفات", sub: (n) => `${n} عنصر · تُحذف يدوياً فقط` },
+    trash: { title: "سلة المحذوفات", sub: (n) => `${n} عنصر · تُحذف تلقائياً بعد 30 يوماً` },
   };
 
   return (
@@ -273,6 +274,16 @@ const Index = () => {
                 title={sectionMeta[activeSection].title}
                 subtitle={sectionMeta[activeSection].sub(visible.length)}
               />
+              {activeSection === "trash" && (
+                <TrashBanner
+                  photos={visible}
+                  states={states}
+                  onRestoreAll={(ids) => {
+                    restore(ids);
+                    clearSelection();
+                  }}
+                />
+              )}
               <PhotoGrid
                 photos={visible}
                 onOpen={setLightboxIndex}
