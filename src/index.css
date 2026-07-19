@@ -96,6 +96,10 @@
   .masonry-col-3 { column-count: 3; }
   .masonry-col-4 { column-count: 4; }
   .masonry-col-5 { column-count: 5; }
+  .masonry-col-6 { column-count: 6; }
+  .masonry-col-7 { column-count: 7; }
+  .masonry-col-8 { column-count: 8; }
+  .masonry-col-10 { column-count: 10; }
 
   .masonry-item {
     break-inside: avoid;
