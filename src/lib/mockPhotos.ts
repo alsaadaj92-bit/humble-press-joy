@@ -8,6 +8,12 @@ export interface MockPhoto {
   height: number;
   date: Date;
   name: string;
+  /** Overrides picsum thumbnail when present (e.g. uploaded via a provider). */
+  thumbSrc?: string;
+  /** Overrides picsum full-size URL when present. */
+  fullSrc?: string;
+  /** Which storage provider produced this item, if any. */
+  provider?: "telegram" | "localServer" | "fileSystem";
 }
 
 const HEIGHTS = [320, 400, 500, 380, 460, 540, 360, 420, 480, 600, 340, 520];
