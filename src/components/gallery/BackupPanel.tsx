@@ -170,6 +170,55 @@ export function BackupPanel() {
           />
         </label>
       </div>
+
+      <div className="space-y-3 rounded-xl bg-secondary/40 p-4">
+        <div className="flex items-center gap-2">
+          <CalendarClock className="h-4 w-4 text-primary" />
+          <p className="text-sm font-medium">نسخة أسبوعية تلقائية</p>
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          يحفظ ملف JSON تلقائياً كل 7 أيام إلى مجلد التنزيلات، وينظّف بيانات
+          التعرّف اليتيمة (embeddings/faces/OCR). الملف محلي فقط.
+        </p>
+        <label className="flex cursor-pointer items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={!!autoBackup?.enabled}
+            onChange={(e) => toggleAutoBackup(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          <span>
+            {autoBackup?.enabled ? "مفعّل" : "متوقف"}
+            {autoBackup?.lastRunAt ? (
+              <span className="ms-2 text-muted-foreground">
+                · آخر نسخة: {new Date(autoBackup.lastRunAt).toLocaleDateString("ar")}
+              </span>
+            ) : null}
+          </span>
+        </label>
+      </div>
+
+      {notificationsSupported() && (
+        <div className="space-y-2 rounded-xl bg-secondary/40 p-4">
+          <div className="flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">إشعارات المزامنة</p>
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            تنبيه محلي عند اكتمال أو فشل المزامنة — لا خوادم دفع خارجية.
+          </p>
+          {notifPerm === "granted" ? (
+            <p className="text-xs text-primary">الإشعارات مفعّلة ✓</p>
+          ) : (
+            <button
+              onClick={enableNotifications}
+              className="btn-secondary w-full text-xs"
+            >
+              {notifPerm === "denied" ? "مرفوضة — فعّلها من إعدادات المتصفح" : "تفعيل الإشعارات"}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
