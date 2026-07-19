@@ -1,4 +1,4 @@
-import { Plus, Upload, X, Camera, Calendar, MapPin, Aperture, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Upload, X, Camera as CameraIcon, Calendar, MapPin, Aperture, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { extractVideoMeta, formatDuration, isVideoMime } from "@/lib/video";
 import { useProviders } from "@/hooks/useProviders";
 import { enqueueFiles, getSyncSettings } from "@/lib/syncEngine";
 import type { MediaAsset } from "@/lib/photoDb";
+import { isNative, pickFromGallery, takePhoto, tap } from "@/lib/native";
 
 interface Row {
   key: string;
@@ -116,6 +117,30 @@ export function UploadFab() {
   };
 
   const openPicker = () => inputRef.current?.click();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const nativeCamera = async () => {
+    setMenuOpen(false);
+    await tap("light");
+    try {
+      const f = await takePhoto();
+      if (f) await handleFiles([f]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const nativeGallery = async () => {
+    setMenuOpen(false);
+    await tap("light");
+    try {
+      const files = await pickFromGallery(30);
+      if (files.length) await handleFiles(files);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
 
 
 
