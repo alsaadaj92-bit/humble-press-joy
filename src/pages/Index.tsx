@@ -308,6 +308,7 @@ const Index = () => {
               onRestore={doRestore}
               onSelectAll={selectAll}
               onAddToAlbum={() => setPickerOpen(true)}
+              onLock={doLock}
             />
           )}
 
