@@ -141,6 +141,7 @@ export function PhotoGrid({
                   className={cn(
                     "masonry-item group relative w-full overflow-hidden rounded-lg bg-secondary",
                     isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    activeId === photo.id && "vt-active-photo",
                   )}
                   style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
                 >
