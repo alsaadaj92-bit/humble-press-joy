@@ -264,25 +264,16 @@ const Index = () => {
             </>
           )}
 
-          {activeSection === "albums" && (
-            <PlaceholderSection
-              title="الألبومات"
-              body="سيتم تفعيل الألبومات اليدوية والذكية في الخطوة القادمة."
-            />
-          )}
+          {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
 
-          {activeSection === "settings" && (
-            <PlaceholderSection
-              title="الإعدادات"
-              body="تفضيلات العرض، الضغط، واستخراج EXIF ستظهر هنا لاحقاً."
-            />
-          )}
+          {activeSection === "settings" && <IdentityCard />}
         </div>
       </main>
 
       <UploadFab />
+      <MobileNav active={activeSection} onSelect={setActiveSection} />
 
       <Lightbox
         photos={visible}
