@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Film, Grid3x3, Sparkles, Download, Loader2 } from "lucide-react";
+import { Film, Grid3x3, Sparkles, Download, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import {
@@ -8,10 +8,21 @@ import {
   buildAnimation,
   type CreationKind,
 } from "@/lib/creations";
+import { pickHighlight, type HighlightMode } from "@/lib/highlights";
+import { usePhotoStates } from "@/hooks/usePhotoStates";
 
 interface Props {
   photos: MockPhoto[];
 }
+
+const HIGHLIGHT_MODES: { id: HighlightMode; label: string }[] = [
+  { id: "mixed", label: "أبرز اللحظات" },
+  { id: "recent", label: "الأحدث" },
+  { id: "year", label: "خلاصة السنة" },
+  { id: "favorites", label: "المفضلة" },
+  { id: "memories", label: "ذكريات هذا الشهر" },
+];
+
 
 const KIND_META: Record<CreationKind, { title: string; desc: string; icon: typeof Film; ext: string }> = {
   collage: { title: "مجمّعة", desc: "شبكة من صورك في صورة واحدة PNG.", icon: Grid3x3, ext: "png" },
