@@ -186,6 +186,13 @@ const Index = () => {
     toast.success("استُعيدت الصور");
     clearSelection();
   };
+  const doLock = async () => {
+    if (!selectedIds.length) return;
+    const { setPhotoStates } = await import("@/lib/photoDb");
+    await setPhotoStates(selectedIds, { locked: true });
+    toast.success("نُقلت للمجلد المؤمَّن");
+    clearSelection();
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
