@@ -20,6 +20,7 @@ import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
+import { PwaStatus } from "@/components/gallery/PwaStatus";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
