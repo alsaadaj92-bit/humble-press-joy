@@ -182,6 +182,12 @@ async function processOneJob(job: SyncJob): Promise<void> {
     throw new Error(`مزود غير مدعوم: ${job.provider}`);
   }
 
+  // Ensure the year/month albums exist for any provider so the Albums panel
+  // stays in sync with what's actually stored.
+  await ensureAutoAlbumsForDate(takenAt);
+
+  }
+
   await photoDb.assets.put(asset);
   await photoDb.syncJobs.update(job.id, {
     status: "done",
