@@ -19,17 +19,20 @@ const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
  *  favoring favorites, capped at `count`. */
 export function pickHighlight(
   photos: MockPhoto[],
-  states: Record<string, PhotoState | undefined>,
+  states: Map<string, PhotoState> | Record<string, PhotoState | undefined>,
   mode: HighlightMode,
   count = 12,
 ): HighlightPick {
+  const getState = (id: string): PhotoState | undefined =>
+    states instanceof Map ? states.get(id) : states[id];
   const visible = photos.filter((p) => {
-    const s = states[p.id];
+    const s = getState(p.id);
     return !s?.trashedAt && !s?.locked && p.kind !== "video";
   });
   if (!visible.length) {
     return { photos: [], title: "لا توجد صور كافية", subtitle: "أضف صوراً أولاً" };
   }
+
 
   const sortedByDateDesc = [...visible].sort((a, b) => b.date.getTime() - a.date.getTime());
 
