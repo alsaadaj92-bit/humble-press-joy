@@ -27,6 +27,7 @@ import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
+import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
@@ -47,12 +48,6 @@ const STUB_SECTIONS: Record<string, { title: string; body: string }> = {
   things: {
     title: "الأشياء",
     body: "تصنيف الصور حسب المحتوى (طعام، سيارات، حيوانات...) — سيصل قريباً باستخدام CLIP محلياً.",
-  },
-  videos: { title: "الفيديوهات", body: "عرض مخصص لكل مقاطع الفيديو — قريباً." },
-  selfies: { title: "السيلفي", body: "تصنيف تلقائي للصور الذاتية عبر كشف الوجوه — قريباً." },
-  screenshots: {
-    title: "لقطات الشاشة",
-    body: "فرز آلي للقطات الشاشة عبر نسبة العرض والـ EXIF — قريباً.",
   },
   creations: {
     title: "أفلام ومجمعات",
@@ -380,6 +375,20 @@ const Index = () => {
                 subtitle="استخرج النص العربي/الإنجليزي محلياً من لقطات الشاشة والإيصالات — بدون سحابة"
               />
               <OcrPanel photos={allPhotos} onOpen={setLightboxIndex} />
+            </>
+          )}
+
+          {(activeSection === "categories" ||
+            activeSection === "videos" ||
+            activeSection === "selfies" ||
+            activeSection === "screenshots" ||
+            activeSection === "documents") && (
+            <>
+              <SectionHero
+                title="التصنيفات"
+                subtitle="فرز تلقائي محلي: فيديوهات، سيلفي، لقطات شاشة، ومستندات — بدون أي إرسال للسحابة"
+              />
+              <CategoriesPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
             </>
           )}
 
