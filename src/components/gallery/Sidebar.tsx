@@ -22,6 +22,7 @@ import {
   Star,
   Video,
   Users,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,10 +73,10 @@ const GROUPS: NavGroup[] = [
     id: "categories",
     label: "التصنيفات",
     items: [
-      { id: "videos", label: "الفيديوهات", icon: Video, stub: true },
-      { id: "selfies", label: "السيلفي", icon: Camera, stub: true },
-      { id: "screenshots", label: "لقطات الشاشة", icon: Camera, stub: true },
-      { id: "creations", label: "أفلام ومجمعات", icon: Play, stub: true },
+      { id: "videos", label: "الفيديوهات", icon: Video },
+      { id: "selfies", label: "السيلفي", icon: Camera },
+      { id: "screenshots", label: "لقطات الشاشة", icon: Camera },
+      { id: "creations", label: "أفلام ومجمعات", icon: Play },
     ],
   },
   {
@@ -86,6 +87,7 @@ const GROUPS: NavGroup[] = [
       { id: "favorites", label: "المفضلة", icon: Heart },
       { id: "starred", label: "المميّزة بنجمة", icon: Star, stub: true },
       { id: "duplicates", label: "التكرارات", icon: Copy },
+      { id: "locked", label: "المجلد المؤمَّن", icon: Lock },
       { id: "archive", label: "الأرشيف", icon: Archive },
       { id: "trash", label: "سلة المحذوفات", icon: Trash2 },
     ],

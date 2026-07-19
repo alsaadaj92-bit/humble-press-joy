@@ -29,6 +29,7 @@ import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
+import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
@@ -97,6 +98,9 @@ const Index = () => {
       const inTrash = !!s?.trashedAt;
       const isArchived = !!s?.archived;
       const isFavorite = !!s?.favorite;
+      const isLocked = !!s?.locked;
+      // Locked items only ever appear inside the Locked Folder section.
+      if (isLocked && activeSection !== "locked") return false;
       switch (activeSection) {
         case "trash":
           return inTrash;
@@ -104,6 +108,8 @@ const Index = () => {
           return isArchived && !inTrash;
         case "favorites":
           return isFavorite && !inTrash && !isArchived;
+        case "locked":
+          return isLocked && !inTrash;
         case "photos":
           return !inTrash && !isArchived;
         default:
@@ -178,6 +184,13 @@ const Index = () => {
     if (!selectedIds.length) return;
     restore(selectedIds);
     toast.success("استُعيدت الصور");
+    clearSelection();
+  };
+  const doLock = async () => {
+    if (!selectedIds.length) return;
+    const { setPhotoStates } = await import("@/lib/photoDb");
+    await setPhotoStates(selectedIds, { locked: true });
+    toast.success("نُقلت للمجلد المؤمَّن");
     clearSelection();
   };
 
@@ -295,6 +308,7 @@ const Index = () => {
               onRestore={doRestore}
               onSelectAll={selectAll}
               onAddToAlbum={() => setPickerOpen(true)}
+              onLock={doLock}
             />
           )}
 
@@ -321,6 +335,7 @@ const Index = () => {
                 states={states}
                 selection={selection}
                 onToggleSelect={toggleSelect}
+                onSelectionChange={(ids) => setSelection(new Set(ids))}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
@@ -398,6 +413,18 @@ const Index = () => {
               <CreationsPanel photos={allPhotos} />
             </>
           )}
+
+          {activeSection === "locked" && (
+            <>
+              <SectionHero
+                title="المجلد المؤمَّن"
+                subtitle="صور محمية برمز PIN محلي — لا تظهر في البحث ولا الذكريات ولا أي قسم آخر"
+              />
+              <LockedFolderPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
+            </>
+          )}
+
+
 
 
           {activeSection === "albums" && <AlbumsPanel />}
