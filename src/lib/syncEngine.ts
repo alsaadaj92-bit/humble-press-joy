@@ -22,6 +22,8 @@ import {
   getUploaderName,
 } from "@/lib/albums";
 import { getActiveProviderKind } from "@/lib/providers";
+import { encryptFile, isUnlocked as isE2EEUnlocked, isE2EEConfigured } from "@/lib/crypto";
+
 
 const SETTINGS_KEY = "syncSettings";
 
@@ -104,13 +106,26 @@ async function processOneJob(job: SyncJob): Promise<void> {
   const cfg = await photoDb.providers.get(job.provider);
   if (!cfg?.configured) throw new Error("مزود التخزين غير مكتمل الإعداد");
 
-  const file = new File([job.blob], job.fileName, { type: job.fileMime });
-  const exif = await extractExif(file);
+  const rawFile = new File([job.blob], job.fileName, { type: job.fileMime });
+  const exif = await extractExif(rawFile);
   const takenAt = exif.dateTaken ?? Date.now();
   const baseId = `asset-${crypto.randomUUID()}`;
 
+  // E2EE: if a passphrase is set up AND unlocked, encrypt before sending to Telegram.
+  // localServer stays plain so users can browse locally without a passphrase.
+  const shouldEncrypt = job.provider === "telegram" && (await isE2EEConfigured());
+  let file = rawFile;
+  let encryption: MediaAsset["encryption"];
+  if (shouldEncrypt) {
+    if (!isE2EEUnlocked()) throw new Error("التشفير مفعّل لكنه مقفل — افتح القفل من الإعدادات");
+    const enc = await encryptFile(rawFile);
+    file = new File([enc.blob], `${rawFile.name}.lgpenc`, { type: "application/octet-stream" });
+    encryption = enc.meta;
+  }
+
   let asset: MediaAsset;
   if (job.provider === "telegram") {
+
     if (!cfg.botToken || !cfg.chatId) throw new Error("إعدادات تيليجرام ناقصة");
 
     // Ensure auto year/month albums exist for this photo's date.
@@ -161,7 +176,9 @@ async function processOneJob(job: SyncJob): Promise<void> {
       createdAt: Date.now(),
       exif,
       telegram: { fileId: res.fileId, messageId: res.messageId },
+      encryption,
     };
+
   } else if (job.provider === "localServer") {
     if (!cfg.baseUrl) throw new Error("عنوان الخادم المحلي غير محدد");
     const res = await localServerUpload(cfg.baseUrl, file);
