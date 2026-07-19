@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Info, X, ZoomIn, ZoomOut } from "lucide-react";
 import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
+import { photoDb } from "@/lib/photoDb";
+import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
 
 interface LightboxProps {
   photos: MockPhoto[];
