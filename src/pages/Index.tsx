@@ -36,6 +36,9 @@ import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
+import { useAutoPipelineLoop } from "@/hooks/useAutoPipeline";
+import { AutoPipelineConsent } from "@/components/gallery/AutoPipelineConsent";
+import { AutoPipelineBadge } from "@/components/gallery/AutoPipelineBadge";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 import { buildTimelineBuckets } from "@/lib/timeline";
 
