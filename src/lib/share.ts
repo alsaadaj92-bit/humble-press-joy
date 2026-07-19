@@ -84,17 +84,10 @@ export async function shareAlbumToTelegram(
     const blob = await fetchAssetBlob(a, providers);
     const file = new File([blob], a.name, { type: a.mime });
     const caption = `${header}\n${a.name}`;
-    const isImage = a.mime.startsWith("image/") && a.kind !== "video";
-    if (isImage && blob.size < 10 * 1024 * 1024) {
-      await telegramSendPhoto(opts.botToken, opts.chatId, file, {
-        messageThreadId: opts.topicId,
-        caption,
-      });
-    } else {
-      await telegramSendDocument(opts.botToken, opts.chatId, file, {
-        messageThreadId: opts.topicId,
-        caption,
-      });
-    }
+    await telegramSendDocument(opts.botToken, opts.chatId, file, {
+      messageThreadId: opts.topicId,
+      caption,
+    });
+
   }
 }
