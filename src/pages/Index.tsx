@@ -369,6 +369,7 @@ const Index = () => {
                 activeId={lightboxIndex != null ? visible[lightboxIndex]?.id ?? null : null}
                 section={activeSection}
                 query={query}
+                density={density}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
