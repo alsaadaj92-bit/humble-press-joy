@@ -389,6 +389,17 @@ const Index = () => {
             </>
           )}
 
+          {activeSection === "creations" && (
+            <>
+              <SectionHero
+                title="أفلام ومجمّعات"
+                subtitle="أنشئ مجمّعات وأفلاماً قصيرة ومتحركات من صورك — كل شيء يُبنى داخل متصفحك، بدون أي رفع"
+              />
+              <CreationsPanel photos={allPhotos} />
+            </>
+          )}
+
+
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
             <>
