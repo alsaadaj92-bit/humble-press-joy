@@ -348,11 +348,14 @@ const Index = () => {
               )}
               <PhotoGrid
                 photos={visible}
-                onOpen={setLightboxIndex}
+                onOpen={(i) => runViewTransition(() => setLightboxIndex(i))}
                 states={states}
                 selection={selection}
                 onToggleSelect={toggleSelect}
                 onSelectionChange={(ids) => setSelection(new Set(ids))}
+                activeId={lightboxIndex != null ? visible[lightboxIndex]?.id ?? null : null}
+                section={activeSection}
+                query={query}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
