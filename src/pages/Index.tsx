@@ -317,7 +317,10 @@ const Index = () => {
           </div>
         )}
 
-        <QuickChips active={activeSection} onSelect={setActiveSection} />
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-background/80 px-4 py-2 backdrop-blur md:px-8">
+          <QuickChips active={activeSection} onSelect={setActiveSection} />
+          <DensityToggle density={density} onChange={setDensity} />
+        </div>
 
         <div className="px-4 py-6 md:px-8 md:py-8">
           {selection.size > 0 && (
