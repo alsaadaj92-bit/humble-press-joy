@@ -1,4 +1,28 @@
-import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw, Sparkles, MapPin, Copy, Brain, UserRound, ScanText } from "lucide-react";
+import {
+  Images,
+  LibraryBig,
+  Cloud,
+  Settings,
+  Search,
+  Heart,
+  Archive,
+  Trash2,
+  RefreshCw,
+  Sparkles,
+  MapPin,
+  Copy,
+  Brain,
+  UserRound,
+  ScanText,
+  Share2,
+  Compass,
+  Wrench,
+  Play,
+  Camera,
+  Star,
+  Video,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -9,29 +33,81 @@ interface SidebarProps {
   embedded?: boolean;
 }
 
-const items = [
-  { id: "photos", label: "الصور", icon: Images },
-  { id: "memories", label: "الذكريات", icon: Sparkles },
-  { id: "places", label: "الأماكن", icon: MapPin },
-  { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
-  { id: "people", label: "الأشخاص", icon: UserRound },
-  { id: "ocr", label: "قراءة النصوص", icon: ScanText },
+interface NavItem {
+  id: string;
+  label: string;
+  icon: typeof Images;
+  /** Feature isn't wired yet — show "قريباً" badge. */
+  stub?: boolean;
+}
 
-  { id: "favorites", label: "المفضلة", icon: Heart },
-  { id: "albums", label: "الألبومات", icon: LibraryBig },
-  { id: "duplicates", label: "التكرارات", icon: Copy },
-  { id: "archive", label: "الأرشيف", icon: Archive },
-  { id: "trash", label: "سلة المحذوفات", icon: Trash2 },
-  { id: "providers", label: "مزودو التخزين", icon: Cloud },
-  { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
-  { id: "settings", label: "الإعدادات", icon: Settings },
+interface NavGroup {
+  id: string;
+  label?: string;
+  items: NavItem[];
+}
+
+// Mirrors Google Photos' primary IA: Photos → Explore → Sharing → Library.
+const GROUPS: NavGroup[] = [
+  {
+    id: "main",
+    items: [
+      { id: "photos", label: "الصور", icon: Images },
+      { id: "memories", label: "الذكريات", icon: Sparkles },
+      { id: "sharing", label: "المشاركة", icon: Share2, stub: true },
+    ],
+  },
+  {
+    id: "explore",
+    label: "استكشاف",
+    items: [
+      { id: "people", label: "الأشخاص والحيوانات", icon: UserRound },
+      { id: "places", label: "الأماكن", icon: MapPin },
+      { id: "things", label: "الأشياء", icon: Compass, stub: true },
+      { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
+      { id: "ocr", label: "قراءة النصوص", icon: ScanText },
+    ],
+  },
+  {
+    id: "categories",
+    label: "التصنيفات",
+    items: [
+      { id: "videos", label: "الفيديوهات", icon: Video, stub: true },
+      { id: "selfies", label: "السيلفي", icon: Camera, stub: true },
+      { id: "screenshots", label: "لقطات الشاشة", icon: Camera, stub: true },
+      { id: "creations", label: "أفلام ومجمعات", icon: Play, stub: true },
+    ],
+  },
+  {
+    id: "library",
+    label: "المكتبة",
+    items: [
+      { id: "albums", label: "الألبومات", icon: LibraryBig },
+      { id: "favorites", label: "المفضلة", icon: Heart },
+      { id: "starred", label: "المميّزة بنجمة", icon: Star, stub: true },
+      { id: "duplicates", label: "التكرارات", icon: Copy },
+      { id: "archive", label: "الأرشيف", icon: Archive },
+      { id: "trash", label: "سلة المحذوفات", icon: Trash2 },
+    ],
+  },
+  {
+    id: "utilities",
+    label: "أدوات",
+    items: [
+      { id: "providers", label: "مزودو التخزين", icon: Cloud },
+      { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
+      { id: "partner", label: "الشريك", icon: Users, stub: true },
+      { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true },
+      { id: "settings", label: "الإعدادات", icon: Settings },
+    ],
+  },
 ];
 
 export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-60 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
+        "flex w-64 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
         !embedded && "hidden md:flex",
         embedded && "h-full w-full border-l-0",
       )}
@@ -54,30 +130,46 @@ export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: Si
         <span>ابحث في صورك</span>
       </button>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = active === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item.id)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-sm transition",
-                isActive
-                  ? "bg-primary/15 font-semibold text-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      <nav className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-2 pb-4">
+        {GROUPS.map((group) => (
+          <div key={group.id}>
+            {group.label && (
+              <div className="px-4 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = active === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onSelect(item.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-sm transition",
+                      isActive
+                        ? "bg-primary/15 font-semibold text-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent",
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="flex-1 text-right">{item.label}</span>
+                    {item.stub && (
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+                        قريباً
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      <div className="border-t border-sidebar-border px-5 py-4 text-[11px] text-muted-foreground">
-        اختصارات: F مفضلة · E أرشيف · Del حذف · / بحث
+      <div className="border-t border-sidebar-border px-5 py-3 text-[11px] text-muted-foreground">
+        F مفضلة · E أرشيف · Del حذف · / بحث
       </div>
     </aside>
   );
