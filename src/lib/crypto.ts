@@ -113,10 +113,11 @@ export async function unlockE2EE(passphrase: string): Promise<void> {
   const key = await deriveMasterKey(passphrase, b64decode(cfg.salt));
   try {
     const pt = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: b64decode(cfg.verifierIv) },
+      { name: "AES-GCM", iv: bs(b64decode(cfg.verifierIv)) },
       key,
-      b64decode(cfg.verifierCt),
+      bs(b64decode(cfg.verifierCt)),
     );
+
     if (new TextDecoder().decode(pt) !== VERIFIER_PLAINTEXT)
       throw new Error("verifier mismatch");
   } catch {
