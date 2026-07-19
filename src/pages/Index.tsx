@@ -11,6 +11,7 @@ import { SyncCenter } from "@/components/gallery/SyncCenter";
 import { AlbumsPanel } from "@/components/gallery/AlbumsPanel";
 import { MemoriesPanel } from "@/components/gallery/MemoriesPanel";
 import { PlacesPanel } from "@/components/gallery/PlacesPanel";
+import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -285,6 +286,15 @@ const Index = () => {
             </>
           )}
           {activeSection === "albums" && <AlbumsPanel />}
+          {activeSection === "duplicates" && (
+            <>
+              <SectionHero
+                title="التكرارات"
+                subtitle="اكتشاف الصور المكررة محلياً باستخدام الحجم وEXIF واسم الملف"
+              />
+              <DuplicatesPanel photos={allPhotos} states={states} />
+            </>
+          )}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
 
