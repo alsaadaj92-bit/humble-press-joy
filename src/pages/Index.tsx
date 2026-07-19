@@ -223,7 +223,10 @@ const Index = () => {
         </SheetContent>
       </Sheet>
 
-      <main className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+        {showScrubber && (
+          <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
+        )}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
