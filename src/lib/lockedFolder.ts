@@ -20,8 +20,9 @@ async function derive(pin: string, salt: Uint8Array): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"],
   );
+  const saltBuf = new Uint8Array(salt).buffer; // ArrayBuffer copy
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 120_000, hash: "SHA-256" },
+    { name: "PBKDF2", salt: saltBuf, iterations: 120_000, hash: "SHA-256" },
     key, 256,
   );
   return b64(bits);
@@ -36,7 +37,7 @@ export async function setLockedPin(pin: string): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await derive(pin, salt);
   await photoDb.kv.bulkPut([
-    { key: KV_SALT, value: b64(salt.buffer) },
+    { key: KV_SALT, value: b64(new Uint8Array(salt).buffer) },
     { key: KV_HASH, value: hash },
   ]);
 }
