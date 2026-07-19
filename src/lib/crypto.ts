@@ -210,19 +210,20 @@ export async function decryptBlob(encrypted: Blob, meta: EncryptionMeta): Promis
   const ciphertext = buf.slice(headerLen);
 
   const rawFileKey = new Uint8Array(
-    await crypto.subtle.decrypt({ name: "AES-GCM", iv: wrapIv }, sessionKey, wrappedKey),
+    await crypto.subtle.decrypt({ name: "AES-GCM", iv: bs(wrapIv) }, sessionKey, bs(wrappedKey)),
   );
   const fileKey = await crypto.subtle.importKey(
     "raw",
-    rawFileKey,
+    bs(rawFileKey),
     { name: "AES-GCM", length: 256 },
     false,
     ["decrypt"],
   );
   const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fileIv },
+    { name: "AES-GCM", iv: bs(fileIv) },
     fileKey,
-    ciphertext,
+    bs(ciphertext),
+
   );
   return new Blob([plaintext], { type: meta.originalMime || "application/octet-stream" });
 }
