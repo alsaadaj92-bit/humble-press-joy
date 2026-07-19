@@ -18,6 +18,8 @@ import {
   Compass,
   Wrench,
   Play,
+  ScanLine,
+
   Camera,
   Star,
   Video,
@@ -77,7 +79,9 @@ const GROUPS: NavGroup[] = [
       { id: "selfies", label: "السيلفي", icon: Camera },
       { id: "screenshots", label: "لقطات الشاشة", icon: Camera },
       { id: "creations", label: "أفلام ومجمعات", icon: Play },
+      { id: "scanner", label: "ماسح المستندات", icon: ScanLine },
     ],
+
   },
   {
     id: "library",
