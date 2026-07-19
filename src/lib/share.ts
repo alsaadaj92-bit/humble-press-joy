@@ -3,10 +3,8 @@
 import JSZip from "jszip";
 import type { MediaAsset, ProviderConfig } from "./photoDb";
 import { resolveAssetUrl } from "./providers";
-import {
-  telegramSendDocument,
-  telegramSendPhoto,
-} from "./providers/telegram";
+import { telegramSendDocument } from "./providers/telegram";
+
 
 async function fetchAssetBlob(
   asset: MediaAsset,
