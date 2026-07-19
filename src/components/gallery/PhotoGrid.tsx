@@ -5,6 +5,7 @@ import type { PhotoState } from "@/lib/photoDb";
 import { formatDuration } from "@/lib/video";
 import { monthKey } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "./EmptyState";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
   p === "telegram" ? "Telegram" : p === "localServer" ? "Local" : "FS";
