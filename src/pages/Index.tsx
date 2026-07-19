@@ -316,7 +316,12 @@ const Index = () => {
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
 
-          {activeSection === "settings" && <IdentityCard />}
+          {activeSection === "settings" && (
+            <div className="space-y-6">
+              <IdentityCard />
+              <BackupPanel />
+            </div>
+          )}
         </div>
       </main>
 
