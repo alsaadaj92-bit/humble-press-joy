@@ -48,7 +48,31 @@ export async function setSyncSettings(patch: Partial<SyncSettings>) {
 export async function enqueueFiles(files: File[]) {
   const now = Date.now();
   const activeKind = (await getActiveProviderKind()) ?? "telegram";
-  const jobs: SyncJob[] = files.map((f, i) => ({
+  const settings = await getSyncSettings();
+
+  // Compress images locally before queuing (opt-in). Runs entirely in the
+  // browser via Canvas; never leaves the device.
+  const prepared: File[] = [];
+  for (const f of files) {
+    if (settings.compressEnabled && f.type.startsWith("image/")) {
+      try {
+        const res = await compressImage(f, {
+          enabled: true,
+          format: settings.compressFormat,
+          quality: settings.compressQuality,
+          maxDimension: settings.compressMaxDim,
+          skipUnderKb: settings.compressSkipUnderKb,
+        });
+        prepared.push(res.file);
+      } catch {
+        prepared.push(f);
+      }
+    } else {
+      prepared.push(f);
+    }
+  }
+
+  const jobs: SyncJob[] = prepared.map((f, i) => ({
     id: `job-${now}-${i}-${Math.random().toString(36).slice(2, 8)}`,
     fileName: f.name,
     fileSize: f.size,
@@ -63,6 +87,7 @@ export async function enqueueFiles(files: File[]) {
   await photoDb.syncJobs.bulkPut(jobs);
   return jobs.map((j) => j.id);
 }
+
 
 export async function retryJob(id: string) {
   await photoDb.syncJobs.update(id, {
