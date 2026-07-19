@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
+  ChevronDown,
   Cloud,
+  Copy,
+  Download,
   ExternalLink,
+  FolderOpen,
   HardDrive,
   Loader2,
   Send,
   ServerCog,
+  Shield,
+  Terminal,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -341,10 +347,11 @@ function TelegramForm({
           />
         </Field>
 
-        <div className="rounded-lg bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
-          💡 نصيحة: يمكنك أيضاً إضافة البوت إلى قناة/مجموعة خاصة بك واستخدام معرّفها
-          (يبدأ عادةً بـ <code>-100</code>) كـ Chat ID.
-        </div>
+        <PrivateChannelGuide botUsername={botInfo?.username} />
+      </StepCard>
+
+      {/* Why not Saved Messages? */}
+      <SavedMessagesNote />
       </StepCard>
 
       {/* STEP 3 — Save */}
