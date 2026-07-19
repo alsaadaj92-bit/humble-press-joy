@@ -286,6 +286,15 @@ const Index = () => {
             </>
           )}
           {activeSection === "albums" && <AlbumsPanel />}
+          {activeSection === "duplicates" && (
+            <>
+              <SectionHero
+                title="التكرارات"
+                subtitle="اكتشاف الصور المكررة محلياً باستخدام الحجم وEXIF واسم الملف"
+              />
+              <DuplicatesPanel photos={allPhotos} states={states} />
+            </>
+          )}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
 
