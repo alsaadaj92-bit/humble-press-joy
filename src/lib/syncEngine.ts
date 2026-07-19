@@ -186,7 +186,7 @@ async function processOneJob(job: SyncJob): Promise<void> {
   // stays in sync with what's actually stored.
   await ensureAutoAlbumsForDate(takenAt);
 
-  }
+
 
   await photoDb.assets.put(asset);
   await photoDb.syncJobs.update(job.id, {
