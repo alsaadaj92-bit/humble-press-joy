@@ -488,7 +488,7 @@ const Index = () => {
       <Lightbox
         photos={visible}
         index={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
+        onClose={() => runViewTransition(() => setLightboxIndex(null))}
         onIndexChange={setLightboxIndex}
       />
 
