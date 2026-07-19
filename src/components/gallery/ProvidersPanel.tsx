@@ -1,10 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Cloud, HardDrive, Loader2, Send, ServerCog, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  Cloud,
+  ExternalLink,
+  HardDrive,
+  Loader2,
+  Send,
+  ServerCog,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { photoDb, type ProviderConfig, type ProviderKind } from "@/lib/photoDb";
 import { useProviders } from "@/hooks/useProviders";
 import { saveProviderConfig, setActiveProvider } from "@/lib/providers";
-import { telegramTest } from "@/lib/providers/telegram";
+import {
+  telegramGetMe,
+  telegramGetUpdates,
+  telegramTest,
+  type TgBotInfo,
+} from "@/lib/providers/telegram";
 import { localServerTest } from "@/lib/providers/localServer";
 import { cn } from "@/lib/utils";
 
