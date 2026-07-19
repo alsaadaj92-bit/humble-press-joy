@@ -335,6 +335,7 @@ const Index = () => {
                 states={states}
                 selection={selection}
                 onToggleSelect={toggleSelect}
+                onSelectionChange={(ids) => setSelection(new Set(ids))}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
