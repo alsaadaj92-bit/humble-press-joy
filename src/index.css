@@ -111,3 +111,19 @@
   }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 }
+
+/* ---- View Transitions API — Shared Element morph between grid & lightbox ---- */
+@supports (view-transition-name: none) {
+  .vt-active-photo { view-transition-name: active-photo; }
+  ::view-transition-old(active-photo),
+  ::view-transition-new(active-photo) {
+    animation-duration: 340ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    mix-blend-mode: normal;
+  }
+  ::view-transition-group(active-photo) {
+    animation-duration: 340ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+

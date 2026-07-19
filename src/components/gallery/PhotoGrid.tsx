@@ -5,6 +5,7 @@ import type { PhotoState } from "@/lib/photoDb";
 import { formatDuration } from "@/lib/video";
 import { monthKey } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "./EmptyState";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
   p === "telegram" ? "Telegram" : p === "localServer" ? "Local" : "FS";
@@ -19,6 +20,12 @@ interface PhotoGridProps {
   onFavoriteToggle: (id: string) => void;
   /** Bulk selection replacement (for drag-to-select). */
   onSelectionChange?: (ids: string[]) => void;
+  /** Currently open photo id — receives the shared view-transition name. */
+  activeId?: string | null;
+  /** Optional section id, used to render a domain-specific empty state. */
+  section?: string;
+  /** Optional current search query — shows a "no results" empty state. */
+  query?: string;
 }
 
 export function PhotoGrid({
@@ -29,6 +36,9 @@ export function PhotoGrid({
   onToggleSelect,
   onFavoriteToggle,
   onSelectionChange,
+  activeId,
+  section,
+  query,
 }: PhotoGridProps) {
   const groups = useMemo(() => groupByDate(photos), [photos]);
   const indexOf = useMemo(() => {
@@ -132,6 +142,7 @@ export function PhotoGrid({
                   className={cn(
                     "masonry-item group relative w-full overflow-hidden rounded-lg bg-secondary",
                     isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                    activeId === photo.id && "vt-active-photo",
                   )}
                   style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
                 >
@@ -223,11 +234,7 @@ export function PhotoGrid({
         );
       })}
 
-      {photos.length === 0 && (
-        <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
-          لا توجد صور هنا بعد.
-        </div>
-      )}
+      {photos.length === 0 && <EmptyState section={section} query={query} />}
     </div>
   );
 }

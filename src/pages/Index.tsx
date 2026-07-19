@@ -31,6 +31,8 @@ import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
+import { QuickChips } from "@/components/gallery/QuickChips";
+import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
@@ -173,20 +175,30 @@ const Index = () => {
   };
   const doArchive = () => {
     if (!selectedIds.length) return;
-    setArchived(selectedIds, activeSection !== "archive");
-    toast.success(activeSection === "archive" ? "أُخرجت من الأرشيف" : "أُرشفت");
+    const ids = [...selectedIds];
+    const wasArchive = activeSection === "archive";
+    setArchived(ids, !wasArchive);
+    toast.success(wasArchive ? "أُخرجت من الأرشيف" : "أُرشفت", {
+      action: { label: "تراجع", onClick: () => setArchived(ids, wasArchive) },
+    });
     clearSelection();
   };
   const doTrash = () => {
     if (!selectedIds.length) return;
-    trash(selectedIds);
-    toast.success("نُقلت لسلة المحذوفات");
+    const ids = [...selectedIds];
+    trash(ids);
+    toast.success("نُقلت لسلة المحذوفات", {
+      action: { label: "تراجع", onClick: () => restore(ids) },
+    });
     clearSelection();
   };
   const doRestore = () => {
     if (!selectedIds.length) return;
-    restore(selectedIds);
-    toast.success("استُعيدت الصور");
+    const ids = [...selectedIds];
+    restore(ids);
+    toast.success("استُعيدت الصور", {
+      action: { label: "تراجع", onClick: () => trash(ids) },
+    });
     clearSelection();
   };
   const doLock = async () => {
@@ -299,6 +311,8 @@ const Index = () => {
           </div>
         )}
 
+        <QuickChips active={activeSection} onSelect={setActiveSection} />
+
         <div className="px-4 py-6 md:px-8 md:py-8">
           {selection.size > 0 && (
             <SelectionToolbar
@@ -334,11 +348,14 @@ const Index = () => {
               )}
               <PhotoGrid
                 photos={visible}
-                onOpen={setLightboxIndex}
+                onOpen={(i) => runViewTransition(() => setLightboxIndex(i))}
                 states={states}
                 selection={selection}
                 onToggleSelect={toggleSelect}
                 onSelectionChange={(ids) => setSelection(new Set(ids))}
+                activeId={lightboxIndex != null ? visible[lightboxIndex]?.id ?? null : null}
+                section={activeSection}
+                query={query}
                 onFavoriteToggle={(id) => {
                   const cur = !!states.get(id)?.favorite;
                   setFavorite([id], !cur);
@@ -471,7 +488,7 @@ const Index = () => {
       <Lightbox
         photos={visible}
         index={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
+        onClose={() => runViewTransition(() => setLightboxIndex(null))}
         onIndexChange={setLightboxIndex}
       />
 
