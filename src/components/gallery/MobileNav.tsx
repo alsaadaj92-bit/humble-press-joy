@@ -1,4 +1,4 @@
-import { Images, LibraryBig, RefreshCw, Settings, Sparkles, Brain, UserRound } from "lucide-react";
+import { Images, LibraryBig, RefreshCw, Settings, Sparkles, Brain, UserRound, ScanText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -6,10 +6,12 @@ const items = [
   { id: "memories", label: "الذكريات", icon: Sparkles },
   { id: "smart", label: "بحث AI", icon: Brain },
   { id: "people", label: "أشخاص", icon: UserRound },
+  { id: "ocr", label: "نصوص", icon: ScanText },
   { id: "albums", label: "الألبومات", icon: LibraryBig },
   { id: "sync", label: "المزامنة", icon: RefreshCw },
   { id: "settings", label: "إعدادات", icon: Settings },
 ];
+
 
 export function MobileNav({
   active,

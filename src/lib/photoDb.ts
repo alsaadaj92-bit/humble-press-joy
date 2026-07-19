@@ -160,6 +160,15 @@ export interface PersonRow {
   hidden?: boolean;
 }
 
+// --- OCR (local text extraction, on-device only) ---------------------------
+export interface OcrRow {
+  id: string;              // assetId (or photoId)
+  text: string;
+  lang: string;            // "ara+eng"
+  confidence: number;      // 0..100
+  updatedAt: number;
+}
+
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
   providers!: Table<ProviderConfig, ProviderKind>;
@@ -172,6 +181,8 @@ class PhotoDatabase extends Dexie {
   embeddings!: Table<EmbeddingRow, string>;
   faces!: Table<FaceRow, string>;
   persons!: Table<PersonRow, string>;
+  ocr!: Table<OcrRow, string>;
+
 
   constructor() {
     super("localgallery-pro");
@@ -237,8 +248,23 @@ class PhotoDatabase extends Dexie {
       faces: "id, assetId, personId, detectedAt",
       persons: "id, updatedAt, hidden",
     });
+    this.version(9).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      albumMembers: "id, albumId, assetId, addedAt",
+      embeddings: "id, modelId, updatedAt",
+      faces: "id, assetId, personId, detectedAt",
+      persons: "id, updatedAt, hidden",
+      ocr: "id, updatedAt",
+    });
   }
 }
+
 
 
 

@@ -16,6 +16,8 @@ import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { SmartSearchPanel } from "@/components/gallery/SmartSearchPanel";
 import { PeoplePanel } from "@/components/gallery/PeoplePanel";
+import { OcrPanel } from "@/components/gallery/OcrPanel";
+
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
@@ -358,6 +360,16 @@ const Index = () => {
               <PeoplePanel photos={allPhotos} onOpen={setLightboxIndex} />
             </>
           )}
+          {activeSection === "ocr" && (
+            <>
+              <SectionHero
+                title="قراءة النصوص من الصور"
+                subtitle="استخرج النص العربي/الإنجليزي محلياً من لقطات الشاشة والإيصالات — بدون سحابة"
+              />
+              <OcrPanel photos={allPhotos} onOpen={setLightboxIndex} />
+            </>
+          )}
+
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
             <>
