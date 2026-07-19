@@ -45,7 +45,7 @@ export function pickHighlight(
     title = "الأحدث";
     subtitle = `أحدث ${count} من صورك`;
   } else if (mode === "favorites") {
-    pool = sortedByDateDesc.filter((p) => states[p.id]?.favorite);
+    pool = sortedByDateDesc.filter((p) => getState(p.id)?.favorite);
     title = "المفضلة";
     subtitle = `${pool.length} صورة مفضلة`;
   } else if (mode === "year") {
@@ -76,7 +76,7 @@ export function pickHighlight(
       for (const k of keys) {
         const arr = buckets.get(k)!;
         // prefer favorite in this bucket first
-        const favIdx = arr.findIndex((p) => states[p.id]?.favorite);
+        const favIdx = arr.findIndex((p) => getState(p.id)?.favorite);
         const take = favIdx >= 0 ? arr.splice(favIdx, 1)[0] : arr.shift();
         if (take) picked.push(take);
         if (picked.length >= count) break;
