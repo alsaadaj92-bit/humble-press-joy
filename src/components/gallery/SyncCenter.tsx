@@ -10,6 +10,7 @@ import {
   ListChecks,
   Zap,
   Smartphone,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSyncJobs, useSyncSettings } from "@/hooks/useSyncEngine";
