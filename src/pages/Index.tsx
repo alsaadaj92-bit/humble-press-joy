@@ -15,6 +15,7 @@ import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { SmartSearchPanel } from "@/components/gallery/SmartSearchPanel";
+import { PeoplePanel } from "@/components/gallery/PeoplePanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
@@ -338,6 +339,15 @@ const Index = () => {
                 subtitle="ابحث في صورك بالوصف الطبيعي — CLIP يعمل داخل متصفحك، بدون إرسال أي صورة"
               />
               <SmartSearchPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
+            </>
+          )}
+          {activeSection === "people" && (
+            <>
+              <SectionHero
+                title="الأشخاص"
+                subtitle="تعرّف على الوجوه ويجمّعها محلياً — بدون أي إرسال للسحابة"
+              />
+              <PeoplePanel photos={allPhotos} onOpen={setLightboxIndex} />
             </>
           )}
           {activeSection === "albums" && <AlbumsPanel />}

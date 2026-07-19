@@ -14,6 +14,7 @@ const items = [
   { id: "memories", label: "الذكريات", icon: Sparkles },
   { id: "places", label: "الأماكن", icon: MapPin },
   { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
+  { id: "people", label: "الأشخاص", icon: UserRound },
   { id: "favorites", label: "المفضلة", icon: Heart },
   { id: "albums", label: "الألبومات", icon: LibraryBig },
   { id: "duplicates", label: "التكرارات", icon: Copy },
