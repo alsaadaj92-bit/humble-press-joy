@@ -72,3 +72,32 @@ export async function telegramTest(botToken: string, chatId: string) {
   );
   return chat;
 }
+
+export interface TgBotInfo {
+  id: number;
+  is_bot: boolean;
+  first_name: string;
+  username?: string;
+}
+
+export async function telegramGetMe(botToken: string): Promise<TgBotInfo> {
+  return tg<TgBotInfo>(`${API(botToken)}/getMe`);
+}
+
+export interface TgUpdate {
+  update_id: number;
+  message?: {
+    message_id: number;
+    text?: string;
+    chat: { id: number; type: string; title?: string; username?: string; first_name?: string };
+    from?: { id: number; first_name?: string; username?: string };
+  };
+}
+
+export async function telegramGetUpdates(
+  botToken: string,
+  offset?: number,
+): Promise<TgUpdate[]> {
+  const q = offset ? `?offset=${offset}` : "";
+  return tg<TgUpdate[]>(`${API(botToken)}/getUpdates${q}`);
+}
