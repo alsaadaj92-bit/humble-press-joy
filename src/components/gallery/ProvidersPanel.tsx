@@ -352,7 +352,6 @@ function TelegramForm({
 
       {/* Why not Saved Messages? */}
       <SavedMessagesNote />
-      </StepCard>
 
       {/* STEP 3 — Save */}
       <StepCard n={3} title="اختبر واحفظ" done={active} muted={!canSave}>
