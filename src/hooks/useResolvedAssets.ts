@@ -45,6 +45,7 @@ export function useResolvedAssets(
     const url = urls.get(a.id);
     const w = a.width ?? 400;
     const h = a.height ?? 400;
+    const isVideo = a.kind === "video" || a.mime.startsWith("video/");
     return {
       id: a.id,
       seed: a.id,
@@ -52,9 +53,12 @@ export function useResolvedAssets(
       height: h,
       date: new Date(a.date),
       name: a.name,
-      thumbSrc: url,
+      thumbSrc: isVideo ? a.posterDataUrl ?? url : url,
       fullSrc: url,
       provider: a.provider,
+      kind: isVideo ? "video" : "image",
+      duration: a.duration,
+      mime: a.mime,
     } as MockPhoto;
   });
 }
