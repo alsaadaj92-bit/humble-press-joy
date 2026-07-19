@@ -388,6 +388,8 @@ const Index = () => {
           {activeSection === "settings" && (
             <div className="space-y-6">
               <IdentityCard />
+              <EncryptionPanel />
+
               <BackupPanel />
             </div>
           )}
