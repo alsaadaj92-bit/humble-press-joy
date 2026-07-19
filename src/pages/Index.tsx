@@ -15,6 +15,7 @@ import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
+import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
@@ -22,6 +23,7 @@ import { useProviders } from "@/hooks/useProviders";
 import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
+import { useTrashSweeper } from "@/hooks/useTrashSweeper";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 
 
