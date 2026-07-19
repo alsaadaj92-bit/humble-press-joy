@@ -1,10 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Cloud, HardDrive, Loader2, Send, ServerCog, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  Cloud,
+  ExternalLink,
+  HardDrive,
+  Loader2,
+  Send,
+  ServerCog,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { photoDb, type ProviderConfig, type ProviderKind } from "@/lib/photoDb";
 import { useProviders } from "@/hooks/useProviders";
 import { saveProviderConfig, setActiveProvider } from "@/lib/providers";
-import { telegramTest } from "@/lib/providers/telegram";
+import {
+  telegramGetMe,
+  telegramGetUpdates,
+  telegramTest,
+  type TgBotInfo,
+} from "@/lib/providers/telegram";
 import { localServerTest } from "@/lib/providers/localServer";
 import { cn } from "@/lib/utils";
 
@@ -89,15 +103,101 @@ function TelegramForm({
 }) {
   const [botToken, setBotToken] = useState(cfg?.botToken ?? "");
   const [chatId, setChatId] = useState(cfg?.chatId ?? "");
+  const [botInfo, setBotInfo] = useState<TgBotInfo | null>(null);
+  const [verifyingToken, setVerifyingToken] = useState(false);
+  const [listening, setListening] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testInfo, setTestInfo] = useState<string | null>(null);
+  const listenAbort = useRef<{ cancelled: boolean } | null>(null);
 
   useEffect(() => {
     setBotToken(cfg?.botToken ?? "");
     setChatId(cfg?.chatId ?? "");
   }, [cfg]);
 
-  const canTest = botToken.trim().length > 20 && chatId.trim().length > 0;
+  const tokenLooksValid = /^\d{6,}:[A-Za-z0-9_-]{20,}$/.test(botToken.trim());
+  const canSave = tokenLooksValid && chatId.trim().length > 0;
+
+  const verifyToken = async () => {
+    setVerifyingToken(true);
+    try {
+      const info = await telegramGetMe(botToken.trim());
+      setBotInfo(info);
+      toast.success(`تم التعرف على البوت: @${info.username ?? info.first_name}`);
+    } catch (e) {
+      setBotInfo(null);
+      toast.error("توكن غير صالح", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setVerifyingToken(false);
+    }
+  };
+
+  // Auto-verify when token changes and looks valid
+  useEffect(() => {
+    if (!tokenLooksValid) {
+      setBotInfo(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const info = await telegramGetMe(botToken.trim());
+        if (!cancelled) setBotInfo(info);
+      } catch {
+        if (!cancelled) setBotInfo(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [botToken, tokenLooksValid]);
+
+  // Poll getUpdates to auto-detect chat id after user taps /start in Telegram
+  const startListening = async () => {
+    if (!tokenLooksValid) {
+      toast.error("أدخل توكن صالح أولاً");
+      return;
+    }
+    listenAbort.current = { cancelled: false };
+    setListening(true);
+    const startedAt = Date.now();
+    try {
+      while (!listenAbort.current.cancelled && Date.now() - startedAt < 120_000) {
+        const updates = await telegramGetUpdates(botToken.trim());
+        const withMsg = updates.filter((u) => u.message?.chat?.id);
+        if (withMsg.length > 0) {
+          const last = withMsg[withMsg.length - 1];
+          const id = String(last.message!.chat.id);
+          setChatId(id);
+          toast.success("تم التقاط الـ Chat ID تلقائياً", {
+            description: `#${id} — ${last.message!.chat.first_name ?? last.message!.chat.title ?? last.message!.chat.username ?? "chat"}`,
+          });
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (!listenAbort.current.cancelled) {
+        toast.info("انتهت مهلة الاستماع", {
+          description: "اضغط 'الاستماع' مرة أخرى ثم أرسل /start للبوت.",
+        });
+      }
+    } catch (e) {
+      toast.error("فشل الاستماع", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    if (listenAbort.current) listenAbort.current.cancelled = true;
+    setListening(false);
+  };
+
+  useEffect(() => () => stopListening(), []);
 
   const doTest = async () => {
     setTesting(true);
@@ -117,7 +217,7 @@ function TelegramForm({
   const doSave = async (setActive: boolean) => {
     await saveProviderConfig({
       kind: "telegram",
-      configured: canTest,
+      configured: canSave,
       botToken: botToken.trim(),
       chatId: chatId.trim(),
     });
@@ -125,65 +225,197 @@ function TelegramForm({
     toast.success(setActive ? "تم الحفظ وتفعيل تيليجرام" : "تم حفظ الإعدادات");
   };
 
+  const openBotFather = () => {
+    // Deep link: opens Telegram app on mobile, web on desktop
+    window.open("https://t.me/BotFather", "_blank", "noopener");
+  };
+  const openMyBot = () => {
+    if (!botInfo?.username) return;
+    window.open(`https://t.me/${botInfo.username}?start=link`, "_blank", "noopener");
+  };
+  const openUserInfoBot = () => {
+    window.open("https://t.me/userinfobot", "_blank", "noopener");
+  };
+
+  const step1Done = tokenLooksValid && !!botInfo;
+  const step2Done = chatId.trim().length > 0;
+
   return (
-    <Card>
-      <h3 className="text-base font-semibold">إعدادات بوت تيليجرام</h3>
-      <p className="text-xs text-muted-foreground">
-        أنشئ بوتاً من @BotFather، ثم أرسل له رسالة من محادثة "Saved Messages" أو مجموعة
-        خاصة لتحصل على chat_id (يمكنك استخدام @userinfobot).
-      </p>
+    <div className="space-y-4">
+      {/* STEP 1 — Create bot & paste token */}
+      <StepCard
+        n={1}
+        title="أنشئ بوتاً واحصل على التوكن"
+        done={step1Done}
+      >
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          افتح <b>@BotFather</b> في تيليجرام، أرسل <code className="rounded bg-secondary px-1">/newbot</code>،
+          اختر اسماً ثم username ينتهي بـ <code className="rounded bg-secondary px-1">bot</code>.
+          سيرد عليك بتوكن مثل <code className="rounded bg-secondary px-1" dir="ltr">123456:AA...</code> — انسخه والصقه هنا.
+        </p>
 
-      <Field label="Bot Token" hint="نمط الشكل: 123456789:AAA...">
-        <input
-          type="password"
-          value={botToken}
-          onChange={(e) => setBotToken(e.target.value)}
-          placeholder="123456789:AA..."
-          className="input-field"
-          autoComplete="off"
-        />
-      </Field>
-
-      <Field label="Chat ID" hint="رقم موجب أو سالب (للمجموعات).">
-        <input
-          value={chatId}
-          onChange={(e) => setChatId(e.target.value)}
-          placeholder="مثال: 123456789"
-          className="input-field"
-          inputMode="numeric"
-        />
-      </Field>
-
-      {testInfo && (
-        <div className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
-          {testInfo}
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={doTest}
-          disabled={!canTest || testing}
-          className="btn-secondary"
-        >
-          {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          <span>اختبار الاتصال</span>
+        <button onClick={openBotFather} className="btn-secondary w-full sm:w-auto">
+          <ExternalLink className="h-4 w-4" />
+          <span>افتح @BotFather في تيليجرام</span>
         </button>
-        <button onClick={() => doSave(false)} disabled={!canTest} className="btn-secondary">
-          حفظ فقط
-        </button>
-        <button onClick={() => doSave(true)} disabled={!canTest} className="btn-primary">
-          حفظ وجعله المزود النشط
-        </button>
-        {active && (
-          <span className="ml-auto flex items-center gap-1 text-xs text-primary">
-            <CheckCircle2 className="h-4 w-4" /> نشط الآن
-          </span>
+
+        <Field label="Bot Token">
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              placeholder="123456789:AA..."
+              className="input-field flex-1"
+              autoComplete="off"
+              dir="ltr"
+            />
+            <button
+              onClick={verifyToken}
+              disabled={!tokenLooksValid || verifyingToken}
+              className="btn-secondary"
+              title="تحقق"
+            >
+              {verifyingToken ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            </button>
+          </div>
+        </Field>
+
+        {botInfo && (
+          <div className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
+            ✓ البوت جاهز: <b>@{botInfo.username}</b> ({botInfo.first_name})
+          </div>
         )}
-      </div>
-    </Card>
+      </StepCard>
+
+      {/* STEP 2 — Get chat id */}
+      <StepCard
+        n={2}
+        title="اربط محادثتك مع البوت"
+        done={step2Done}
+        muted={!step1Done}
+      >
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          افتح البوت الذي أنشأته، اضغط <b>Start</b> أو أرسل أي رسالة له،
+          وسيلتقط التطبيق الـ Chat ID تلقائياً.
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={openMyBot}
+            disabled={!botInfo?.username}
+            className="btn-primary"
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span>افتح البوت الآن</span>
+          </button>
+          {!listening ? (
+            <button
+              onClick={startListening}
+              disabled={!tokenLooksValid}
+              className="btn-secondary"
+            >
+              <Zap className="h-4 w-4" />
+              <span>ابدأ الاستماع للـ /start</span>
+            </button>
+          ) : (
+            <button onClick={stopListening} className="btn-secondary">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>جاري الاستماع… (اضغط للإلغاء)</span>
+            </button>
+          )}
+          <button onClick={openUserInfoBot} className="btn-secondary">
+            <ExternalLink className="h-4 w-4" />
+            <span>أو استخدم @userinfobot</span>
+          </button>
+        </div>
+
+        <Field label="Chat ID" hint="سيُملأ تلقائياً بعد إرسال /start للبوت.">
+          <input
+            value={chatId}
+            onChange={(e) => setChatId(e.target.value)}
+            placeholder="مثال: 123456789"
+            className="input-field"
+            inputMode="numeric"
+            dir="ltr"
+          />
+        </Field>
+
+        <div className="rounded-lg bg-secondary/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
+          💡 نصيحة: يمكنك أيضاً إضافة البوت إلى قناة/مجموعة خاصة بك واستخدام معرّفها
+          (يبدأ عادةً بـ <code>-100</code>) كـ Chat ID.
+        </div>
+      </StepCard>
+
+      {/* STEP 3 — Save */}
+      <StepCard n={3} title="اختبر واحفظ" done={active} muted={!canSave}>
+        {testInfo && (
+          <div className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
+            {testInfo}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button onClick={doTest} disabled={!canSave || testing} className="btn-secondary">
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            <span>اختبار الاتصال</span>
+          </button>
+          <button onClick={() => doSave(false)} disabled={!canSave} className="btn-secondary">
+            حفظ فقط
+          </button>
+          <button onClick={() => doSave(true)} disabled={!canSave} className="btn-primary">
+            حفظ وجعله المزود النشط
+          </button>
+          {active && (
+            <span className="ms-auto flex items-center gap-1 text-xs text-primary">
+              <CheckCircle2 className="h-4 w-4" /> نشط الآن
+            </span>
+          )}
+        </div>
+      </StepCard>
+    </div>
   );
 }
+
+function StepCard({
+  n,
+  title,
+  done,
+  muted,
+  children,
+}: {
+  n: number;
+  title: string;
+  done?: boolean;
+  muted?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={cn(
+        "space-y-3 rounded-2xl border p-5 transition",
+        done
+          ? "border-primary/40 bg-primary/[0.04]"
+          : muted
+          ? "border-border/60 bg-card/60 opacity-70"
+          : "border-border bg-card",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+            done ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground",
+          )}
+        >
+          {done ? <CheckCircle2 className="h-4 w-4" /> : n}
+        </span>
+        <h3 className="text-base font-semibold">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 
 // ---------------- Local Server ---------------------------------------------
 function LocalServerForm({
