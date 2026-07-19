@@ -78,11 +78,8 @@ export function subscribeLockState(cb: (unlocked: boolean) => void): () => void 
 /** Remove the PIN and unlock everything (asks caller for confirmation). */
 export async function resetLockedFolder(): Promise<void> {
   await photoDb.kv.bulkDelete([KV_HASH, KV_SALT]);
-  // Unlock every currently-locked item.
-  const locked = await photoDb.states.where("locked").equals(1).toArray().catch(async () => {
-    // fallback if index missing
-    return (await photoDb.states.toArray()).filter((s) => s.locked);
-  });
+  const all = await photoDb.states.toArray();
+  const locked = all.filter((s) => s.locked);
   await photoDb.states.bulkPut(locked.map((s) => ({ ...s, locked: false })));
   sessionUnlocked = false;
   listeners.forEach((l) => l(false));
