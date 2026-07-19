@@ -1,4 +1,4 @@
-import { Plus, Upload, X, Camera, Calendar, MapPin, Aperture, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Upload, X, Camera as CameraIcon, Calendar, MapPin, Aperture, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { extractVideoMeta, formatDuration, isVideoMime } from "@/lib/video";
 import { useProviders } from "@/hooks/useProviders";
 import { enqueueFiles, getSyncSettings } from "@/lib/syncEngine";
 import type { MediaAsset } from "@/lib/photoDb";
+import { isNative, pickFromGallery, takePhoto, tap } from "@/lib/native";
 
 interface Row {
   key: string;
@@ -117,6 +118,30 @@ export function UploadFab() {
 
   const openPicker = () => inputRef.current?.click();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const nativeCamera = async () => {
+    setMenuOpen(false);
+    await tap("light");
+    try {
+      const f = await takePhoto();
+      if (f) await handleFiles([f]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const nativeGallery = async () => {
+    setMenuOpen(false);
+    await tap("light");
+    try {
+      const files = await pickFromGallery(30);
+      if (files.length) await handleFiles(files);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+
 
 
   return (
@@ -161,14 +186,38 @@ export function UploadFab() {
         style={{ pointerEvents: "none" }}
       />
 
-      <button
-        onClick={openPicker}
-        className="fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95 md:bottom-6 md:left-6"
-        style={{ boxShadow: "var(--shadow-fab)", marginBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <Plus className="h-5 w-5" />
-        <span>{active ? `رفع عبر ${labelOf(active)}` : "استيراد صور"}</span>
-      </button>
+      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:left-6" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+        {menuOpen && isNative() && (
+          <>
+            <button
+              onClick={nativeCamera}
+              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+            >
+              <CameraIcon className="h-4 w-4" /> كاميرا
+            </button>
+            <button
+              onClick={nativeGallery}
+              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+            >
+              <ImageIcon className="h-4 w-4" /> من معرض الهاتف
+            </button>
+            <button
+              onClick={() => { setMenuOpen(false); openPicker(); }}
+              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+            >
+              <Upload className="h-4 w-4" /> ملفات
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => (isNative() ? setMenuOpen((v) => !v) : openPicker())}
+          className="flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95"
+          style={{ boxShadow: "var(--shadow-fab)" }}
+        >
+          <Plus className="h-5 w-5" />
+          <span>{active ? `رفع عبر ${labelOf(active)}` : "استيراد صور"}</span>
+        </button>
+      </div>
 
       {rows && <ImportModal rows={rows} onClose={() => setRows(null)} />}
     </>
@@ -276,7 +325,7 @@ function RowItem({ row }: { row: Row }) {
           <>
             <Field icon={<Calendar className="h-3.5 w-3.5" />} label="التاريخ" value={dateLabel} />
             <Field
-              icon={<Camera className="h-3.5 w-3.5" />}
+              icon={<CameraIcon className="h-3.5 w-3.5" />}
               label="الكاميرا"
               value={exif?.camera ?? "—"}
             />

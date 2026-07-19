@@ -10,6 +10,23 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
+    backgroundColor: '#0b0b0b',
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 800,
+      launchAutoHide: true,
+      backgroundColor: '#0b0b0b',
+      androidSplashResourceName: 'splash',
+      showSpinner: false,
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#4285F4',
+    },
+    Camera: {
+      permissions: ['camera', 'photos'],
+    },
   },
 };
 
