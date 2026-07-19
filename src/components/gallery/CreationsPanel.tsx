@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Film, Grid3x3, Sparkles, Download, Loader2 } from "lucide-react";
+import { Film, Grid3x3, Sparkles, Download, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import {
@@ -8,10 +8,21 @@ import {
   buildAnimation,
   type CreationKind,
 } from "@/lib/creations";
+import { pickHighlight, type HighlightMode } from "@/lib/highlights";
+import { usePhotoStates } from "@/hooks/usePhotoStates";
 
 interface Props {
   photos: MockPhoto[];
 }
+
+const HIGHLIGHT_MODES: { id: HighlightMode; label: string }[] = [
+  { id: "mixed", label: "أبرز اللحظات" },
+  { id: "recent", label: "الأحدث" },
+  { id: "year", label: "خلاصة السنة" },
+  { id: "favorites", label: "المفضلة" },
+  { id: "memories", label: "ذكريات هذا الشهر" },
+];
+
 
 const KIND_META: Record<CreationKind, { title: string; desc: string; icon: typeof Film; ext: string }> = {
   collage: { title: "مجمّعة", desc: "شبكة من صورك في صورة واحدة PNG.", icon: Grid3x3, ext: "png" },
@@ -26,11 +37,23 @@ export function CreationsPanel({ photos }: Props) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [output, setOutput] = useState<{ url: string; kind: CreationKind } | null>(null);
+  const { states } = usePhotoStates();
 
   const candidates = useMemo(
     () => photos.filter((p) => p.kind !== "video").slice(0, 80),
     [photos],
   );
+
+  const autoPick = (mode: HighlightMode) => {
+    const pick = pickHighlight(photos, states, mode, Math.min(count, 12));
+    if (pick.photos.length < 2) {
+      toast.error(pick.title);
+      return;
+    }
+    setSelected(new Set(pick.photos.map((p) => p.id)));
+    toast.success(`${pick.title} — ${pick.subtitle}`);
+  };
+
 
   const chosen = useMemo(() => {
     if (selected.size > 0) return candidates.filter((p) => selected.has(p.id));
@@ -108,6 +131,29 @@ export function CreationsPanel({ photos }: Props) {
           );
         })}
       </div>
+
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+          <Wand2 className="h-4 w-4 text-primary" />
+          اختيار تلقائي ذكي
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {HIGHLIGHT_MODES.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => autoPick(m.id)}
+              className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          يختار محلياً أفضل الصور بناءً على التاريخ والمفضلة والذكريات — كلها معالجة في متصفحك.
+        </p>
+      </div>
+
+
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
         <label className="text-sm text-muted-foreground">عدد الصور الافتراضي:</label>

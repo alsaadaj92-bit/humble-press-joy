@@ -29,6 +29,8 @@ import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
+import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel";
+
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
 import { QuickChips } from "@/components/gallery/QuickChips";
@@ -433,6 +435,17 @@ const Index = () => {
               <CreationsPanel photos={allPhotos} />
             </>
           )}
+
+          {activeSection === "scanner" && (
+            <>
+              <SectionHero
+                title="ماسح المستندات"
+                subtitle="التقط الأوراق والإيصالات، صحّح المنظور، وصدّرها PDF — كل شيء داخل متصفحك بدون رفع"
+              />
+              <DocumentScannerPanel />
+            </>
+          )}
+
 
           {activeSection === "locked" && (
             <>
