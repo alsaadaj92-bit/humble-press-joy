@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Info, Pencil, X, ZoomIn, ZoomOut } from "lucide-react";
 import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { photoDb } from "@/lib/photoDb";
 import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
 import { MiniMap } from "./MiniMap";
 import { PhotoEditor } from "./PhotoEditor";
+import { ZoomableImage } from "./ZoomableImage";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -16,6 +17,7 @@ interface LightboxProps {
 
 export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProps) {
   const [zoomed, setZoomed] = useState(false);
+  const zoomedRef = useRef(false);
   const [showInfo, setShowInfo] = useState(false);
   const [editing, setEditing] = useState(false);
   const [exif, setExif] = useState<ExifData | null>(null);
@@ -61,12 +63,17 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose, goPrev, goNext]);
 
-  // Basic swipe support
+  // Basic swipe support — disabled while pinch-zoomed so panning doesn't jump photos.
   useEffect(() => {
     if (!open) return;
     let startX = 0;
-    const onTouchStart = (e: TouchEvent) => (startX = e.touches[0].clientX);
+    let startTouches = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      startTouches = e.touches.length;
+      startX = e.touches[0].clientX;
+    };
     const onTouchEnd = (e: TouchEvent) => {
+      if (zoomedRef.current || startTouches > 1) return;
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) < 50) return;
       // RTL: swipe right => previous
