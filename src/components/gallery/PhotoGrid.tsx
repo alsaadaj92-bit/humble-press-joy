@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart, Check, Play } from "lucide-react";
 import { groupByDate, picsumThumb, type MockPhoto } from "@/lib/mockPhotos";
 import type { PhotoState } from "@/lib/photoDb";
@@ -17,6 +17,8 @@ interface PhotoGridProps {
   selection: Set<string>;
   onToggleSelect: (id: string, shift: boolean) => void;
   onFavoriteToggle: (id: string) => void;
+  /** Bulk selection replacement (for drag-to-select). */
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 export function PhotoGrid({
@@ -26,6 +28,7 @@ export function PhotoGrid({
   selection,
   onToggleSelect,
   onFavoriteToggle,
+  onSelectionChange,
 }: PhotoGridProps) {
   const groups = useMemo(() => groupByDate(photos), [photos]);
   const indexOf = useMemo(() => {
@@ -36,8 +39,79 @@ export function PhotoGrid({
   const selectionMode = selection.size > 0;
   const lastClickRef = useRef<string | null>(null);
 
+  // ---- Drag-to-select (desktop pointer, additive to existing selection) ----
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [dragBox, setDragBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number; base: Set<string> } | null>(null);
+
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    const root = rootRef.current;
+    if (!root) return;
+
+    const onDown = (e: PointerEvent) => {
+      // Only start drag on empty grid areas (not on tiles/buttons).
+      const target = e.target as HTMLElement;
+      if (target.closest("button, a, input, [data-tile]")) return;
+      if (e.button !== 0) return;
+      const rect = root.getBoundingClientRect();
+      dragStartRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top + root.scrollTop,
+        base: new Set(selection),
+      };
+      root.setPointerCapture(e.pointerId);
+    };
+
+    const onMove = (e: PointerEvent) => {
+      const start = dragStartRef.current;
+      if (!start) return;
+      const rect = root.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top + root.scrollTop;
+      const x = Math.min(start.x, cx);
+      const y = Math.min(start.y, cy);
+      const w = Math.abs(cx - start.x);
+      const h = Math.abs(cy - start.y);
+      if (w < 4 && h < 4) return;
+      setDragBox({ x, y, w, h });
+      // Hit-test all tiles.
+      const tiles = root.querySelectorAll<HTMLElement>("[data-tile]");
+      const hits = new Set(start.base);
+      const rootRect = root.getBoundingClientRect();
+      tiles.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const tx = r.left - rootRect.left;
+        const ty = r.top - rootRect.top + root.scrollTop;
+        const overlaps = tx < x + w && tx + r.width > x && ty < y + h && ty + r.height > y;
+        if (overlaps) hits.add(el.dataset.tile!);
+      });
+      onSelectionChange(Array.from(hits));
+    };
+
+    const onUp = () => {
+      dragStartRef.current = null;
+      setDragBox(null);
+    };
+
+    root.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      root.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [onSelectionChange, selection]);
+
   return (
-    <div className="space-y-6">
+    <div ref={rootRef} className="relative space-y-6">
+      {dragBox && (
+        <div
+          className="pointer-events-none absolute z-20 rounded-md border-2 border-primary bg-primary/10"
+          style={{ left: dragBox.x, top: dragBox.y, width: dragBox.w, height: dragBox.h }}
+        />
+      )}
       {groups.map((group) => {
         const first = group.items[0];
         const mKey = first ? monthKey(first.date) : undefined;
