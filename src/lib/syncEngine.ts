@@ -112,12 +112,42 @@ async function processOneJob(job: SyncJob): Promise<void> {
   let asset: MediaAsset;
   if (job.provider === "telegram") {
     if (!cfg.botToken || !cfg.chatId) throw new Error("إعدادات تيليجرام ناقصة");
-    const rules = await photoDb.topicRules.toArray();
-    const threadId = rules.length
-      ? pickTopicForAsset({ date: takenAt, exif }, rules)
-      : undefined;
+
+    // Ensure auto year/month albums exist for this photo's date.
+    const { month } = await ensureAutoAlbumsForDate(takenAt);
+
+    // Resolve topic: album binding wins; then legacy rules; then auto-create.
+    let threadId = await pickAlbumTopicForDate(takenAt);
+    if (threadId == null) {
+      const rules = await photoDb.topicRules.toArray();
+      if (rules.length) threadId = pickTopicForAsset({ date: takenAt, exif }, rules);
+    }
+    if (threadId == null && settings.autoCreateTopics) {
+      try {
+        const created = await telegramCreateForumTopic(
+          cfg.botToken,
+          cfg.chatId,
+          month.name,
+        );
+        threadId = created.message_thread_id;
+        await setAlbumTopic(month.id, threadId);
+      } catch {
+        // Group may not be a forum (Topics disabled) or bot lacks perms.
+        // Fall back silently — the photo will land in the main chat.
+      }
+    }
+
+    // Caption: uploader name + album name, so multiple contributors can be
+    // distinguished visually inside the same chat.
+    const uploader = await getUploaderName();
+    const captionParts: string[] = [];
+    if (uploader) captionParts.push(`👤 ${uploader}`);
+    captionParts.push(`📁 ${month.name}`);
+    const caption = captionParts.join("\n");
+
     const res = await telegramSendDocument(cfg.botToken, cfg.chatId, file, {
       messageThreadId: threadId,
+      caption,
     });
     asset = {
       id: baseId,
