@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Download, Upload, ShieldAlert } from "lucide-react";
+import { Download, Upload, ShieldAlert, BellRing, CalendarClock } from "lucide-react";
 import {
   buildBackup,
   downloadBackup,
   parseBackup,
   restoreBackup,
 } from "@/lib/backup";
+import {
+  getAutoBackupSettings,
+  setAutoBackupSettings,
+  type AutoBackupSettings,
+} from "@/lib/autoBackup";
+import {
+  notificationsPermission,
+  notificationsSupported,
+  requestNotificationPermission,
+} from "@/lib/notifications";
 
 export function BackupPanel() {
   const [busy, setBusy] = useState(false);

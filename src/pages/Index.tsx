@@ -79,6 +79,7 @@ const Index = () => {
   const uploadedPhotos = useResolvedAssets(assets, providers);
   useSyncLoop();
   useTrashSweeper();
+  useAutoBackupLoop();
   useAutoPipelineLoop();
 
 
