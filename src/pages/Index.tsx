@@ -21,6 +21,7 @@ import { useProviders } from "@/hooks/useProviders";
 import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
+import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 
 
 const Index = () => {
@@ -48,6 +49,9 @@ const Index = () => {
     );
   }, [uploadedPhotos, mockPhotos]);
 
+  const parsedQuery = useMemo(() => parseQuery(query), [query]);
+  const queryChips = useMemo(() => describeQuery(parsedQuery), [parsedQuery]);
+
   const visible = useMemo<MockPhoto[]>(() => {
     let list = allPhotos;
     list = list.filter((p) => {
@@ -69,11 +73,10 @@ const Index = () => {
       }
     });
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q));
+      list = list.filter((p) => matchPhoto(p, parsedQuery, { states }));
     }
     return list;
-  }, [allPhotos, query, states, activeSection]);
+  }, [allPhotos, query, parsedQuery, states, activeSection]);
 
   useEffect(() => {
     setSelection(new Set());
@@ -215,15 +218,29 @@ const Index = () => {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="flex flex-1 items-center gap-2 rounded-full bg-secondary px-4 py-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input
-              ref={searchInputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث باسم الملف... (اضغط / للتركيز)"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
+          <div className="flex flex-1 flex-col gap-1">
+            <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="ابحث... جرّب: year:2024 is:favorite has:gps camera:canon"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            {queryChips.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 px-2">
+                {queryChips.map((c) => (
+                  <span
+                    key={c}
+                    className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
