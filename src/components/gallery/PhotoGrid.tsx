@@ -1,7 +1,8 @@
 import { useMemo, useRef } from "react";
-import { Heart, Check } from "lucide-react";
+import { Heart, Check, Play } from "lucide-react";
 import { groupByDate, picsumThumb, type MockPhoto } from "@/lib/mockPhotos";
 import type { PhotoState } from "@/lib/photoDb";
+import { formatDuration } from "@/lib/video";
 import { cn } from "@/lib/utils";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
@@ -81,6 +82,20 @@ export function PhotoGrid({
                       <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
                         {providerLabel(photo.provider)}
                       </span>
+                    )}
+                    {photo.kind === "video" && (
+                      <>
+                        <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                          <span className="grid h-12 w-12 place-items-center rounded-full bg-black/60 text-white backdrop-blur transition group-hover:scale-110">
+                            <Play className="h-6 w-6 fill-current" />
+                          </span>
+                        </span>
+                        {photo.duration ? (
+                          <span className="absolute bottom-2 left-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+                            {formatDuration(photo.duration)}
+                          </span>
+                        ) : null}
+                      </>
                     )}
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                   </button>
