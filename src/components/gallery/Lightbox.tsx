@@ -235,3 +235,12 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
     </div>
   );
 }
+
+function InfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs">{label}</dt>
+      <dd className="text-foreground">{value}</dd>
+    </div>
+  );
+}
