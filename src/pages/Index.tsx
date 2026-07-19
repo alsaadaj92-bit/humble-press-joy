@@ -31,6 +31,8 @@ import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
+import { QuickChips } from "@/components/gallery/QuickChips";
+import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
