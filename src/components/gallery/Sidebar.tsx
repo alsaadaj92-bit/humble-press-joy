@@ -5,6 +5,8 @@ interface SidebarProps {
   active: string;
   onSelect: (id: string) => void;
   onSearchClick: () => void;
+  /** When true, remove the desktop-only "hidden md:flex" wrapper class */
+  embedded?: boolean;
 }
 
 const items = [
@@ -18,10 +20,15 @@ const items = [
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
-
-export function GallerySidebar({ active, onSelect, onSearchClick }: SidebarProps) {
+export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: SidebarProps) {
   return (
-    <aside className="hidden md:flex w-60 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside
+      className={cn(
+        "flex w-60 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
+        !embedded && "hidden md:flex",
+        embedded && "h-full w-full border-l-0",
+      )}
+    >
       <div className="flex items-center gap-2 px-5 py-5">
         <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-primary">
           <Images className="h-5 w-5" />
