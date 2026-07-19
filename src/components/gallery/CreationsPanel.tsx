@@ -132,6 +132,29 @@ export function CreationsPanel({ photos }: Props) {
         })}
       </div>
 
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+          <Wand2 className="h-4 w-4 text-primary" />
+          اختيار تلقائي ذكي
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {HIGHLIGHT_MODES.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => autoPick(m.id)}
+              className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          يختار محلياً أفضل الصور بناءً على التاريخ والمفضلة والذكريات — كلها معالجة في متصفحك.
+        </p>
+      </div>
+
+
+
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
         <label className="text-sm text-muted-foreground">عدد الصور الافتراضي:</label>
         <input
