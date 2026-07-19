@@ -124,6 +124,14 @@ export interface Album {
   updatedAt: number;
 }
 
+export interface EmbeddingRow {
+  id: string;
+  vec: number[];
+  dim: number;
+  modelId: string;
+  updatedAt: number;
+}
+
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
   providers!: Table<ProviderConfig, ProviderKind>;
@@ -132,6 +140,7 @@ class PhotoDatabase extends Dexie {
   topicRules!: Table<TopicRule, string>;
   syncJobs!: Table<SyncJob, string>;
   albums!: Table<Album, string>;
+  embeddings!: Table<EmbeddingRow, string>;
 
   constructor() {
     super("localgallery-pro");
@@ -162,11 +171,22 @@ class PhotoDatabase extends Dexie {
       syncJobs: "id, status, createdAt, updatedAt",
       albums: "id, kind, key, updatedAt",
     });
+    this.version(6).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      embeddings: "id, modelId, updatedAt",
+    });
   }
 }
 
 
 export const photoDb = new PhotoDatabase();
+
 
 export async function setPhotoStates(ids: string[], patch: Partial<PhotoState>) {
   await photoDb.transaction("rw", photoDb.states, async () => {
