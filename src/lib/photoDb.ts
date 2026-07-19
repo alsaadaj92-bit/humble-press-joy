@@ -99,6 +99,7 @@ export interface SyncJob {
 }
 
 export type SyncMode = "manual" | "auto-on-import" | "auto-interval";
+export type CompressFormat = "webp" | "jpeg" | "original";
 
 export interface SyncSettings {
   mode: SyncMode;
@@ -107,6 +108,12 @@ export interface SyncSettings {
   maxFileMb: number;
   paused: boolean;
   autoCreateTopics: boolean;  // auto-create Telegram forum topic per album
+  // Local pre-upload compression (never happens on the wire).
+  compressEnabled: boolean;
+  compressFormat: CompressFormat;
+  compressQuality: number;    // 0.1..1
+  compressMaxDim: number;     // longest edge in px (0 = keep)
+  compressSkipUnderKb: number;
 }
 
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
@@ -116,7 +123,13 @@ export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   maxFileMb: 200,
   paused: false,
   autoCreateTopics: true,
+  compressEnabled: false,
+  compressFormat: "webp",
+  compressQuality: 0.82,
+  compressMaxDim: 2560,
+  compressSkipUnderKb: 300,
 };
+
 
 // --- Albums (auto + manual) -------------------------------------------------
 export type AlbumKind = "auto-year" | "auto-month" | "manual";
