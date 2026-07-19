@@ -1,17 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Download, Upload, ShieldAlert } from "lucide-react";
+import { Download, Upload, ShieldAlert, BellRing, CalendarClock } from "lucide-react";
 import {
   buildBackup,
   downloadBackup,
   parseBackup,
   restoreBackup,
 } from "@/lib/backup";
+import {
+  getAutoBackupSettings,
+  setAutoBackupSettings,
+  type AutoBackupSettings,
+} from "@/lib/autoBackup";
+import {
+  notificationsPermission,
+  notificationsSupported,
+  requestNotificationPermission,
+} from "@/lib/notifications";
 
 export function BackupPanel() {
   const [busy, setBusy] = useState(false);
   const [includeSecrets, setIncludeSecrets] = useState(false);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const [autoBackup, setAutoBackup] = useState<AutoBackupSettings | null>(null);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    getAutoBackupSettings().then(setAutoBackup);
+    if (notificationsSupported()) setNotifPerm(notificationsPermission());
+  }, []);
+
+  const toggleAutoBackup = async (enabled: boolean) => {
+    const next = await setAutoBackupSettings({ enabled });
+    setAutoBackup(next);
+    toast.success(enabled ? "تم تفعيل النسخ الأسبوعي" : "تم إيقاف النسخ التلقائي");
+  };
+
+  const enableNotifications = async () => {
+    const p = await requestNotificationPermission();
+    setNotifPerm(p);
+    if (p === "granted") toast.success("تم تفعيل الإشعارات");
+    else toast.error("رُفضت صلاحية الإشعارات — يمكن تفعيلها من إعدادات المتصفح");
+  };
 
   const doExport = async () => {
     try {
@@ -140,6 +170,55 @@ export function BackupPanel() {
           />
         </label>
       </div>
+
+      <div className="space-y-3 rounded-xl bg-secondary/40 p-4">
+        <div className="flex items-center gap-2">
+          <CalendarClock className="h-4 w-4 text-primary" />
+          <p className="text-sm font-medium">نسخة أسبوعية تلقائية</p>
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          يحفظ ملف JSON تلقائياً كل 7 أيام إلى مجلد التنزيلات، وينظّف بيانات
+          التعرّف اليتيمة (embeddings/faces/OCR). الملف محلي فقط.
+        </p>
+        <label className="flex cursor-pointer items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={!!autoBackup?.enabled}
+            onChange={(e) => toggleAutoBackup(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          <span>
+            {autoBackup?.enabled ? "مفعّل" : "متوقف"}
+            {autoBackup?.lastRunAt ? (
+              <span className="ms-2 text-muted-foreground">
+                · آخر نسخة: {new Date(autoBackup.lastRunAt).toLocaleDateString("ar")}
+              </span>
+            ) : null}
+          </span>
+        </label>
+      </div>
+
+      {notificationsSupported() && (
+        <div className="space-y-2 rounded-xl bg-secondary/40 p-4">
+          <div className="flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">إشعارات المزامنة</p>
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            تنبيه محلي عند اكتمال أو فشل المزامنة — لا خوادم دفع خارجية.
+          </p>
+          {notifPerm === "granted" ? (
+            <p className="text-xs text-primary">الإشعارات مفعّلة ✓</p>
+          ) : (
+            <button
+              onClick={enableNotifications}
+              className="btn-secondary w-full text-xs"
+            >
+              {notifPerm === "denied" ? "مرفوضة — فعّلها من إعدادات المتصفح" : "تفعيل الإشعارات"}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
