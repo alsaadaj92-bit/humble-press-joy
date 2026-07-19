@@ -51,6 +51,9 @@ import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
 import { useAutoBackupLoop } from "@/hooks/useAutoBackup";
 import { useAutoPipelineLoop } from "@/hooks/useAutoPipeline";
+import { useNativeInit } from "@/hooks/useNativeInit";
+import { useSyncNotifications } from "@/hooks/useSyncNotifications";
+import { PermissionsPanel } from "@/components/gallery/PermissionsPanel";
 import { AutoPipelineConsent } from "@/components/gallery/AutoPipelineConsent";
 import { AutoPipelineBadge } from "@/components/gallery/AutoPipelineBadge";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
@@ -92,6 +95,8 @@ const Index = () => {
   useTrashSweeper();
   useAutoBackupLoop();
   useAutoPipelineLoop();
+  useNativeInit();
+  useSyncNotifications();
 
 
   // Uploaded assets first (newest), then mocks — sorted by date desc.
