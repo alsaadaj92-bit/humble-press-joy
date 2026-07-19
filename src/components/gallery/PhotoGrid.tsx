@@ -3,6 +3,7 @@ import { Heart, Check, Play } from "lucide-react";
 import { groupByDate, picsumThumb, type MockPhoto } from "@/lib/mockPhotos";
 import type { PhotoState } from "@/lib/photoDb";
 import { formatDuration } from "@/lib/video";
+import { monthKey } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
@@ -37,8 +38,11 @@ export function PhotoGrid({
 
   return (
     <div className="space-y-10">
-      {groups.map((group) => (
-        <section key={group.label}>
+      {groups.map((group) => {
+        const first = group.items[0];
+        const mKey = first ? monthKey(first.date) : undefined;
+        return (
+        <section key={group.label} data-month={mKey}>
           <h2 className="mb-3 text-sm font-semibold text-foreground/90">
             {group.label}
           </h2>
@@ -141,7 +145,8 @@ export function PhotoGrid({
             })}
           </div>
         </section>
-      ))}
+        );
+      })}
 
       {photos.length === 0 && (
         <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">

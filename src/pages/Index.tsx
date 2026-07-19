@@ -16,6 +16,7 @@ import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
+import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
@@ -25,6 +26,7 @@ import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
+import { buildTimelineBuckets } from "@/lib/timeline";
 
 
 const Index = () => {
@@ -37,6 +39,7 @@ const Index = () => {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
 
   const { states, setFavorite, setArchived, trash, restore } = usePhotoStates();
   const { providers } = useProviders();
@@ -81,6 +84,14 @@ const Index = () => {
     }
     return list;
   }, [allPhotos, query, parsedQuery, states, activeSection]);
+
+  const timelineBuckets = useMemo(() => buildTimelineBuckets(visible), [visible]);
+  const showScrubber =
+    (activeSection === "photos" ||
+      activeSection === "favorites" ||
+      activeSection === "archive" ||
+      activeSection === "trash") &&
+    timelineBuckets.length >= 2;
 
   useEffect(() => {
     setSelection(new Set());
@@ -212,7 +223,10 @@ const Index = () => {
         </SheetContent>
       </Sheet>
 
-      <main className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+        {showScrubber && (
+          <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
+        )}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
