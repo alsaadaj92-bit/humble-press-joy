@@ -6,11 +6,15 @@ import { PhotoGrid } from "@/components/gallery/PhotoGrid";
 import { Lightbox } from "@/components/gallery/Lightbox";
 import { UploadFab } from "@/components/gallery/UploadFab";
 import { SelectionToolbar } from "@/components/gallery/SelectionToolbar";
+import { ProvidersPanel } from "@/components/gallery/ProvidersPanel";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
+import { useProviders } from "@/hooks/useProviders";
+import { useMediaAssets } from "@/hooks/useMediaAssets";
+import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 
 const Index = () => {
-  const photos = useMemo(() => generateMockPhotos(64), []);
+  const mockPhotos = useMemo(() => generateMockPhotos(64), []);
   const [activeSection, setActiveSection] = useState("photos");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -20,10 +24,19 @@ const Index = () => {
   const lastSelectedRef = useRef<string | null>(null);
 
   const { states, setFavorite, setArchived, trash, restore } = usePhotoStates();
+  const { providers } = useProviders();
+  const assets = useMediaAssets();
+  const uploadedPhotos = useResolvedAssets(assets, providers);
+
+  // Uploaded assets first (newest), then mocks — sorted by date desc.
+  const allPhotos = useMemo<MockPhoto[]>(() => {
+    return [...uploadedPhotos, ...mockPhotos].sort(
+      (a, b) => b.date.getTime() - a.date.getTime(),
+    );
+  }, [uploadedPhotos, mockPhotos]);
 
   const visible = useMemo<MockPhoto[]>(() => {
-    let list = photos;
-    // Section filter
+    let list = allPhotos;
     list = list.filter((p) => {
       const s = states.get(p.id);
       const inTrash = !!s?.trashedAt;
@@ -47,9 +60,8 @@ const Index = () => {
       list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [photos, query, states, activeSection]);
+  }, [allPhotos, query, states, activeSection]);
 
-  // Clear selection when switching sections
   useEffect(() => {
     setSelection(new Set());
   }, [activeSection]);
@@ -107,7 +119,6 @@ const Index = () => {
     clearSelection();
   };
 
-  // Global keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -146,7 +157,11 @@ const Index = () => {
   }, [selection, visible, lightboxIndex, activeSection]);
 
   const sectionMeta: Record<string, { title: string; sub: (n: number) => string }> = {
-    photos: { title: "الصور", sub: (n) => `${n} صورة · مرتبة حسب التاريخ` },
+    photos: {
+      title: "الصور",
+      sub: (n) =>
+        `${n} صورة · ${uploadedPhotos.length} منها مرفوعة عبر مزودك` ,
+    },
     favorites: { title: "المفضلة", sub: (n) => `${n} صورة مميّزة` },
     archive: { title: "الأرشيف", sub: (n) => `${n} صورة مؤرشفة` },
     trash: { title: "سلة المحذوفات", sub: (n) => `${n} عنصر · تُحذف يدوياً فقط` },
@@ -227,12 +242,7 @@ const Index = () => {
               body="سيتم تفعيل الألبومات اليدوية والذكية في الخطوة القادمة."
             />
           )}
-          {activeSection === "providers" && (
-            <PlaceholderSection
-              title="مزودو التخزين"
-              body="ستضيف هنا إعدادات تيليجرام والخادم المحلي و File System API في المرحلة الثانية."
-            />
-          )}
+          {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "settings" && (
             <PlaceholderSection
               title="الإعدادات"

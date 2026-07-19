@@ -81,7 +81,9 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
 
   if (!open || !photo) return null;
 
-  const fullSrc = picsumUrl(photo.seed, 1400, Math.round((1400 * photo.height) / photo.width));
+  const fullSrc =
+    photo.fullSrc ??
+    picsumUrl(photo.seed, 1400, Math.round((1400 * photo.height) / photo.width));
   const dateLabel = new Intl.DateTimeFormat("ar-EG", {
     dateStyle: "full",
   }).format(photo.date);
