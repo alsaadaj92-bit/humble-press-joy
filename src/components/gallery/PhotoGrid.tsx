@@ -63,17 +63,21 @@ export function PhotoGrid({
                     className="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <img
-                      src={picsumThumb(photo.seed, 500)}
+                      src={photo.thumbSrc ?? picsumThumb(photo.seed, 500)}
                       alt={photo.name}
                       loading="lazy"
                       className={cn(
                         "h-full w-full object-cover transition duration-300 group-hover:brightness-110",
                         !isSelected && "group-hover:scale-[1.02]",
                         isSelected && "scale-95",
+                        !photo.thumbSrc && photo.provider && "opacity-40",
                       )}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                  </button>
+                    {photo.provider && (
+                      <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+                        {providerLabel(photo.provider)}
+                      </span>
+                    )}
 
                   {/* Selection check (top-right in RTL = top-left visual) */}
                   <button
