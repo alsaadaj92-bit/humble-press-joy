@@ -11,6 +11,7 @@ import { SyncCenter } from "@/components/gallery/SyncCenter";
 import { AlbumsPanel } from "@/components/gallery/AlbumsPanel";
 import { MemoriesPanel } from "@/components/gallery/MemoriesPanel";
 import { PlacesPanel } from "@/components/gallery/PlacesPanel";
+import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
