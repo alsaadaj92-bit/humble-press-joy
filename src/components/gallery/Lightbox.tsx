@@ -15,9 +15,24 @@ interface LightboxProps {
 export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProps) {
   const [zoomed, setZoomed] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [exif, setExif] = useState<ExifData | null>(null);
 
   const open = index !== null;
   const photo = open ? photos[index!] : null;
+
+  useEffect(() => {
+    if (!photo) {
+      setExif(null);
+      return;
+    }
+    let cancelled = false;
+    photoDb.states.get(photo.id).then((s) => {
+      if (!cancelled) setExif(s?.exif ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photo]);
 
   const goPrev = useCallback(() => {
     if (index === null) return;
