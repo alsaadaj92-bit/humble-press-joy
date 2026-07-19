@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { extractExif, formatExposure, orientationLabel } from "@/lib/exif";
+import { extractVideoMeta, formatDuration, isVideoMime } from "@/lib/video";
 import { useProviders } from "@/hooks/useProviders";
 import { enqueueFiles, getSyncSettings } from "@/lib/syncEngine";
 import type { MediaAsset } from "@/lib/photoDb";
@@ -24,9 +25,11 @@ export function UploadFab() {
   const { active, activeConfig } = useProviders();
 
   const handleFiles = async (files: FileList | File[]) => {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const arr = Array.from(files).filter(
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+    );
     if (!arr.length) {
-      toast.error("لم يتم اختيار صور");
+      toast.error("لم يتم اختيار صور أو مقاطع");
       return;
     }
 
@@ -41,28 +44,46 @@ export function UploadFab() {
     }));
     setRows(initial);
 
-    // Extract EXIF locally for preview (works with or without a provider).
+    // Extract metadata locally for preview (works with or without a provider).
     for (let i = 0; i < arr.length; i++) {
       const file = arr[i];
+      const isVideo = isVideoMime(file.type);
       try {
-        const exif = await extractExif(file);
+        let asset: MediaAsset;
+        if (isVideo) {
+          const meta = await extractVideoMeta(file);
+          asset = {
+            id: initial[i].key,
+            provider: active ?? "telegram",
+            name: file.name,
+            size: file.size,
+            mime: file.type,
+            width: meta.width,
+            height: meta.height,
+            date: file.lastModified,
+            createdAt: Date.now(),
+            kind: "video",
+            duration: meta.duration,
+            posterDataUrl: meta.posterDataUrl,
+          };
+        } else {
+          const exif = await extractExif(file);
+          asset = {
+            id: initial[i].key,
+            provider: active ?? "telegram",
+            name: file.name,
+            size: file.size,
+            mime: file.type,
+            date: exif.dateTaken ?? file.lastModified,
+            createdAt: Date.now(),
+            exif,
+            kind: "image",
+          };
+        }
         setRows((prev) =>
           prev?.map((r, idx) =>
             idx === i
-              ? {
-                  ...r,
-                  status: hasProvider ? "queued" : "skipped",
-                  asset: {
-                    id: r.key,
-                    provider: active ?? "telegram",
-                    name: file.name,
-                    size: file.size,
-                    mime: file.type,
-                    date: exif.dateTaken ?? file.lastModified,
-                    createdAt: Date.now(),
-                    exif,
-                  } as MediaAsset,
-                }
+              ? { ...r, status: hasProvider ? "queued" : "skipped", asset }
               : r,
           ) ?? null,
         );
