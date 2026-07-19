@@ -29,7 +29,7 @@ import {
   type EditPipeline,
   type FilterPreset,
 } from "@/lib/imageEditor";
-import { enqueueUpload } from "@/lib/syncEngine";
+import { enqueueFiles } from "@/lib/syncEngine";
 import { getActiveProviderKind } from "@/lib/providers";
 
 type Tab = "filters" | "adjust" | "crop";
@@ -131,7 +131,7 @@ export function PhotoEditor({ src, fileName, onClose, onSaved }: PhotoEditorProp
             URL.revokeObjectURL(url);
           } else {
             const file = new File([blob], outName, { type: "image/jpeg" });
-            await enqueueUpload(file);
+            await enqueueFiles([file]);
             toast.success("أُضيفت إلى طابور المزامنة");
           }
         }
