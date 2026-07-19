@@ -387,6 +387,22 @@ const Index = () => {
           )}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
+          {activeSection === "sharing" && (
+            <>
+              <SectionHero
+                title="المشاركة"
+                subtitle="ألبومات مشتركة، روابط، ومكتبة الشريك — كلها ضمن خارطة الطريق"
+              />
+              <SharingPanel />
+            </>
+          )}
+
+          {STUB_SECTIONS[activeSection] && (
+            <PlaceholderSection
+              title={STUB_SECTIONS[activeSection].title}
+              body={STUB_SECTIONS[activeSection].body}
+            />
+          )}
 
           {activeSection === "settings" && (
             <div className="space-y-6">
