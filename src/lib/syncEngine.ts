@@ -213,7 +213,24 @@ async function processOneJob(job: SyncJob): Promise<void> {
 
   } else if (job.provider === "localServer") {
     if (!cfg.baseUrl) throw new Error("عنوان الخادم المحلي غير محدد");
-    const res = await localServerUpload(cfg.baseUrl, file);
+    // Prefer chunked/resumable uploads when the server advertises it.
+    // Progress is written back to the SyncJob so the UI can render it live.
+    const supportsChunked = await localServerSupportsChunked(cfg.baseUrl);
+    let res: { url: string; path: string };
+    if (supportsChunked) {
+      res = await localServerUploadChunked(cfg.baseUrl, file, {
+        jobId: job.id,
+        onProgress: (received, total) => {
+          const p = total > 0 ? received / total : 0;
+          void photoDb.syncJobs.update(job.id, {
+            progress: Math.max(0, Math.min(1, p)),
+            updatedAt: Date.now(),
+          });
+        },
+      });
+    } else {
+      res = await localServerUpload(cfg.baseUrl, file);
+    }
     asset = {
       id: baseId,
       provider: "localServer",
