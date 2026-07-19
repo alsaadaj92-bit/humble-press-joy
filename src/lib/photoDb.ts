@@ -168,6 +168,7 @@ class PhotoDatabase extends Dexie {
   topicRules!: Table<TopicRule, string>;
   syncJobs!: Table<SyncJob, string>;
   albums!: Table<Album, string>;
+  albumMembers!: Table<AlbumMember, string>;
   embeddings!: Table<EmbeddingRow, string>;
   faces!: Table<FaceRow, string>;
   persons!: Table<PersonRow, string>;
@@ -223,8 +224,22 @@ class PhotoDatabase extends Dexie {
       faces: "id, assetId, personId, detectedAt",
       persons: "id, updatedAt, hidden",
     });
+    this.version(8).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      albumMembers: "id, albumId, assetId, addedAt",
+      embeddings: "id, modelId, updatedAt",
+      faces: "id, assetId, personId, detectedAt",
+      persons: "id, updatedAt, hidden",
+    });
   }
 }
+
 
 
 export const photoDb = new PhotoDatabase();
