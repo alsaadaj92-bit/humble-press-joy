@@ -1,4 +1,4 @@
-import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw, Sparkles, MapPin, Copy, Brain } from "lucide-react";
+import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw, Sparkles, MapPin, Copy, Brain, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
