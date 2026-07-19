@@ -26,6 +26,7 @@ import {
   type TgBotInfo,
 } from "@/lib/providers/telegram";
 import { localServerTest } from "@/lib/providers/localServer";
+import { LOCAL_SERVER_CODE, LOCAL_SERVER_PACKAGE_JSON } from "@/lib/serverCode";
 import { cn } from "@/lib/utils";
 
 const TABS: { kind: ProviderKind; label: string; icon: typeof Cloud }[] = [
