@@ -25,9 +25,9 @@ export function normalizeName(name: string): string {
   const base = dot > 0 ? name.slice(0, dot) : name;
   return base
     .toLowerCase()
-    .replace(/[\s_-]*(copy|نسخة)\b.*$/i, "")
+    .replace(/[\s-]*(copy|نسخة)\b.*$/i, "")
     .replace(/\s*\(\d+\)\s*$/g, "")
-    .replace(/[-_ ]\d+$/g, "")
+    .replace(/ \d+$/g, "")
     .trim();
 }
 
