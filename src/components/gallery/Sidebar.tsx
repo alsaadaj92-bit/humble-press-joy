@@ -87,6 +87,7 @@ const GROUPS: NavGroup[] = [
     id: "library",
     label: "المكتبة",
     items: [
+      { id: "library", label: "نظرة عامة", icon: LibraryBig },
       { id: "albums", label: "الألبومات", icon: LibraryBig },
       { id: "favorites", label: "المفضلة", icon: Heart },
       { id: "starred", label: "المميّزة بنجمة", icon: Star, stub: true },
