@@ -37,16 +37,16 @@ export function PhotoGrid({
   const lastClickRef = useRef<string | null>(null);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       {groups.map((group) => {
         const first = group.items[0];
         const mKey = first ? monthKey(first.date) : undefined;
         return (
         <section key={group.label} data-month={mKey}>
-          <h2 className="mb-3 text-sm font-semibold text-foreground/90">
+          <h2 className="mb-2 px-1 text-[13px] font-medium text-foreground/80">
             {group.label}
           </h2>
-          <div className="masonry masonry-col-2 sm:masonry-col-3 lg:masonry-col-4 xl:masonry-col-5">
+          <div className="masonry gap-1 sm:gap-1.5 masonry-col-3 sm:masonry-col-4 md:masonry-col-5 lg:masonry-col-6 xl:masonry-col-7">
             {group.items.map((photo) => {
               const idx = indexOf.get(photo.id)!;
               const state = states.get(photo.id);
