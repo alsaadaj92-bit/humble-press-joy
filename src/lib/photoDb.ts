@@ -92,6 +92,7 @@ export interface SyncSettings {
   wifiOnly: boolean;
   maxFileMb: number;
   paused: boolean;
+  autoCreateTopics: boolean;  // auto-create Telegram forum topic per album
 }
 
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
@@ -100,7 +101,22 @@ export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   wifiOnly: false,
   maxFileMb: 200,
   paused: false,
+  autoCreateTopics: true,
 };
+
+// --- Albums (auto + manual) -------------------------------------------------
+export type AlbumKind = "auto-year" | "auto-month" | "manual";
+
+export interface Album {
+  id: string;               // stable e.g. "auto-year-2024", "auto-month-2024-06", uuid for manual
+  name: string;             // display name
+  kind: AlbumKind;
+  key?: string;             // "2024" or "2024-06"
+  topicId?: number;         // Telegram forum topic binding
+  coverAssetId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
 
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
@@ -109,6 +125,7 @@ class PhotoDatabase extends Dexie {
   kv!: Table<KV, string>;
   topicRules!: Table<TopicRule, string>;
   syncJobs!: Table<SyncJob, string>;
+  albums!: Table<Album, string>;
 
   constructor() {
     super("localgallery-pro");
@@ -129,6 +146,15 @@ class PhotoDatabase extends Dexie {
       kv: "key",
       topicRules: "id, priority, kind",
       syncJobs: "id, status, createdAt, updatedAt",
+    });
+    this.version(5).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
     });
   }
 }

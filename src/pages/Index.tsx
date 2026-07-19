@@ -8,6 +8,10 @@ import { UploadFab } from "@/components/gallery/UploadFab";
 import { SelectionToolbar } from "@/components/gallery/SelectionToolbar";
 import { ProvidersPanel } from "@/components/gallery/ProvidersPanel";
 import { SyncCenter } from "@/components/gallery/SyncCenter";
+import { AlbumsPanel } from "@/components/gallery/AlbumsPanel";
+import { IdentityCard } from "@/components/gallery/IdentityCard";
+import { MobileNav } from "@/components/gallery/MobileNav";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
 import { useProviders } from "@/hooks/useProviders";
@@ -22,6 +26,7 @@ const Index = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
@@ -180,11 +185,29 @@ const Index = () => {
         onSearchClick={() => setSearchOpen(true)}
       />
 
-      <main className="scrollbar-thin relative flex-1 overflow-y-auto">
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent side="right" className="w-72 p-0">
+          <GallerySidebar
+            embedded
+            active={activeSection}
+            onSelect={(id) => {
+              setActiveSection(id);
+              setDrawerOpen(false);
+            }}
+            onSearchClick={() => {
+              setDrawerOpen(false);
+              setSearchOpen(true);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <main className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
             aria-label="القائمة"
+            onClick={() => setDrawerOpen(true)}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -241,25 +264,16 @@ const Index = () => {
             </>
           )}
 
-          {activeSection === "albums" && (
-            <PlaceholderSection
-              title="الألبومات"
-              body="سيتم تفعيل الألبومات اليدوية والذكية في الخطوة القادمة."
-            />
-          )}
+          {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}
 
-          {activeSection === "settings" && (
-            <PlaceholderSection
-              title="الإعدادات"
-              body="تفضيلات العرض، الضغط، واستخراج EXIF ستظهر هنا لاحقاً."
-            />
-          )}
+          {activeSection === "settings" && <IdentityCard />}
         </div>
       </main>
 
       <UploadFab />
+      <MobileNav active={activeSection} onSelect={setActiveSection} />
 
       <Lightbox
         photos={visible}

@@ -79,6 +79,30 @@ export async function telegramTest(botToken: string, chatId: string) {
   return chat;
 }
 
+/**
+ * Create a forum topic in a supergroup. Requires the bot to be admin with
+ * `can_manage_topics` permission, and the group must have Topics enabled.
+ */
+export async function telegramCreateForumTopic(
+  botToken: string,
+  chatId: string,
+  name: string,
+  iconColor?: number,
+): Promise<{ message_thread_id: number; name: string }> {
+  return tg<{ message_thread_id: number; name: string }>(
+    `${API(botToken)}/createForumTopic`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        name,
+        ...(iconColor ? { icon_color: iconColor } : {}),
+      }),
+    },
+  );
+}
+
 export interface TgBotInfo {
   id: number;
   is_bot: boolean;
