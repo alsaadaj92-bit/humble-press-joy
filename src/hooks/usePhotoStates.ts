@@ -1,32 +1,16 @@
-import { useLiveQuery } from "dexie-react-hooks";
-import { photoDb, setPhotoStates, type PhotoState } from "@/lib/photoDb";
-import { useMemo } from "react";
-
-// Fallback: dexie-react-hooks might not be installed — use manual subscription instead.
-// We keep this file free of that dep and roll our own tiny live query below.
-
 import { useEffect, useState } from "react";
+import { liveQuery } from "dexie";
+import { photoDb, setPhotoStates, type PhotoState } from "@/lib/photoDb";
 
 export function usePhotoStates() {
   const [states, setStates] = useState<Map<string, PhotoState>>(new Map());
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const all = await photoDb.states.toArray();
-      if (!mounted) return;
-      setStates(new Map(all.map((s) => [s.id, s])));
-    };
-    load();
-    // Dexie provides a hook to observe changes
-    const sub = photoDb.on("changes", () => {
-      load();
+    const sub = liveQuery(() => photoDb.states.toArray()).subscribe({
+      next: (all) => setStates(new Map(all.map((s) => [s.id, s]))),
+      error: (err) => console.error("photoStates liveQuery", err),
     });
-    return () => {
-      mounted = false;
-      // @ts-expect-error dexie hook remover
-      photoDb.on("changes").unsubscribe?.(sub);
-    };
+    return () => sub.unsubscribe();
   }, []);
 
   return {
@@ -36,9 +20,7 @@ export function usePhotoStates() {
     setArchived: (ids: string[], archived: boolean) =>
       setPhotoStates(ids, { archived }),
     trash: (ids: string[]) => setPhotoStates(ids, { trashedAt: Date.now() }),
-    restore: (ids: string[]) => setPhotoStates(ids, { trashedAt: undefined }),
+    restore: (ids: string[]) =>
+      setPhotoStates(ids, { trashedAt: undefined as unknown as number }),
   };
 }
-
-// (silence unused import warnings from optional dep line above)
-export const _unused = { useLiveQuery, useMemo };

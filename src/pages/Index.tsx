@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, Search } from "lucide-react";
+import { toast } from "sonner";
 import { GallerySidebar } from "@/components/gallery/Sidebar";
 import { PhotoGrid } from "@/components/gallery/PhotoGrid";
 import { Lightbox } from "@/components/gallery/Lightbox";
 import { UploadFab } from "@/components/gallery/UploadFab";
-import { generateMockPhotos } from "@/lib/mockPhotos";
+import { SelectionToolbar } from "@/components/gallery/SelectionToolbar";
+import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
+import { usePhotoStates } from "@/hooks/usePhotoStates";
 
 const Index = () => {
   const photos = useMemo(() => generateMockPhotos(64), []);
@@ -12,12 +15,142 @@ const Index = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const lastSelectedRef = useRef<string | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return photos;
-    const q = query.trim().toLowerCase();
-    return photos.filter((p) => p.name.toLowerCase().includes(q));
-  }, [photos, query]);
+  const { states, setFavorite, setArchived, trash, restore } = usePhotoStates();
+
+  const visible = useMemo<MockPhoto[]>(() => {
+    let list = photos;
+    // Section filter
+    list = list.filter((p) => {
+      const s = states.get(p.id);
+      const inTrash = !!s?.trashedAt;
+      const isArchived = !!s?.archived;
+      const isFavorite = !!s?.favorite;
+      switch (activeSection) {
+        case "trash":
+          return inTrash;
+        case "archive":
+          return isArchived && !inTrash;
+        case "favorites":
+          return isFavorite && !inTrash && !isArchived;
+        case "photos":
+          return !inTrash && !isArchived;
+        default:
+          return !inTrash && !isArchived;
+      }
+    });
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [photos, query, states, activeSection]);
+
+  // Clear selection when switching sections
+  useEffect(() => {
+    setSelection(new Set());
+  }, [activeSection]);
+
+  const toggleSelect = useCallback(
+    (id: string, shift: boolean) => {
+      setSelection((prev) => {
+        const next = new Set(prev);
+        if (shift && lastSelectedRef.current) {
+          const ids = visible.map((p) => p.id);
+          const a = ids.indexOf(lastSelectedRef.current);
+          const b = ids.indexOf(id);
+          if (a !== -1 && b !== -1) {
+            const [lo, hi] = a < b ? [a, b] : [b, a];
+            for (let i = lo; i <= hi; i++) next.add(ids[i]);
+            return next;
+          }
+        }
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        lastSelectedRef.current = id;
+        return next;
+      });
+    },
+    [visible],
+  );
+
+  const selectedIds = useMemo(() => Array.from(selection), [selection]);
+  const allSelectedFav = selectedIds.every((id) => states.get(id)?.favorite);
+
+  const clearSelection = () => setSelection(new Set());
+  const selectAll = () => setSelection(new Set(visible.map((p) => p.id)));
+
+  const doFavorite = () => {
+    if (!selectedIds.length) return;
+    setFavorite(selectedIds, !allSelectedFav);
+    toast.success(allSelectedFav ? "أُزيلت من المفضلة" : "أُضيفت للمفضلة");
+  };
+  const doArchive = () => {
+    if (!selectedIds.length) return;
+    setArchived(selectedIds, activeSection !== "archive");
+    toast.success(activeSection === "archive" ? "أُخرجت من الأرشيف" : "أُرشفت");
+    clearSelection();
+  };
+  const doTrash = () => {
+    if (!selectedIds.length) return;
+    trash(selectedIds);
+    toast.success("نُقلت لسلة المحذوفات");
+    clearSelection();
+  };
+  const doRestore = () => {
+    if (!selectedIds.length) return;
+    restore(selectedIds);
+    toast.success("استُعيدت الصور");
+    clearSelection();
+  };
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isTyping) {
+        if (e.key === "Escape") (target as HTMLInputElement).blur();
+        return;
+      }
+      if (lightboxIndex !== null) return;
+
+      if (e.key === "/") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      if (e.key === "Escape") {
+        if (selection.size) clearSelection();
+        return;
+      }
+      if (!selection.size) return;
+      if (e.key === "f" || e.key === "F") doFavorite();
+      else if (e.key === "e" || e.key === "E") doArchive();
+      else if (e.key === "Delete" || e.key === "Backspace") doTrash();
+      else if ((e.metaKey || e.ctrlKey) && (e.key === "a" || e.key === "A")) {
+        e.preventDefault();
+        selectAll();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, visible, lightboxIndex, activeSection]);
+
+  const sectionMeta: Record<string, { title: string; sub: (n: number) => string }> = {
+    photos: { title: "الصور", sub: (n) => `${n} صورة · مرتبة حسب التاريخ` },
+    favorites: { title: "المفضلة", sub: (n) => `${n} صورة مميّزة` },
+    archive: { title: "الأرشيف", sub: (n) => `${n} صورة مؤرشفة` },
+    trash: { title: "سلة المحذوفات", sub: (n) => `${n} عنصر · تُحذف يدوياً فقط` },
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
@@ -28,7 +161,6 @@ const Index = () => {
       />
 
       <main className="scrollbar-thin relative flex-1 overflow-y-auto">
-        {/* Header */}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
@@ -40,9 +172,10 @@ const Index = () => {
           <div className="flex flex-1 items-center gap-2 rounded-full bg-secondary px-4 py-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <input
+              ref={searchInputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث باسم الملف..."
+              placeholder="ابحث باسم الملف... (اضغط / للتركيز)"
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -54,36 +187,56 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Body */}
         <div className="px-4 py-6 md:px-8 md:py-8">
-          {activeSection === "photos" && (
+          {selection.size > 0 && (
+            <SelectionToolbar
+              count={selection.size}
+              section={activeSection}
+              onClear={clearSelection}
+              onFavorite={doFavorite}
+              onArchive={doArchive}
+              onTrash={doTrash}
+              onRestore={doRestore}
+              onSelectAll={selectAll}
+            />
+          )}
+
+          {sectionMeta[activeSection] && (
             <>
               <SectionHero
-                title="الصور"
-                subtitle={`${filtered.length} صورة · مرتبة حسب التاريخ`}
+                title={sectionMeta[activeSection].title}
+                subtitle={sectionMeta[activeSection].sub(visible.length)}
               />
-              <PhotoGrid photos={filtered} onOpen={setLightboxIndex} />
+              <PhotoGrid
+                photos={visible}
+                onOpen={setLightboxIndex}
+                states={states}
+                selection={selection}
+                onToggleSelect={toggleSelect}
+                onFavoriteToggle={(id) => {
+                  const cur = !!states.get(id)?.favorite;
+                  setFavorite([id], !cur);
+                }}
+              />
             </>
           )}
 
           {activeSection === "albums" && (
             <PlaceholderSection
               title="الألبومات"
-              body="سيتم تفعيل الألبومات في المرحلة الثانية بعد ربط مزود التخزين."
+              body="سيتم تفعيل الألبومات اليدوية والذكية في الخطوة القادمة."
             />
           )}
-
           {activeSection === "providers" && (
             <PlaceholderSection
               title="مزودو التخزين"
               body="ستضيف هنا إعدادات تيليجرام والخادم المحلي و File System API في المرحلة الثانية."
             />
           )}
-
           {activeSection === "settings" && (
             <PlaceholderSection
               title="الإعدادات"
-              body="تفضيلات العرض، الضغط، والاستخراج التلقائي لبيانات EXIF ستظهر هنا لاحقاً."
+              body="تفضيلات العرض، الضغط، واستخراج EXIF ستظهر هنا لاحقاً."
             />
           )}
         </div>
@@ -92,7 +245,7 @@ const Index = () => {
       <UploadFab />
 
       <Lightbox
-        photos={filtered}
+        photos={visible}
         index={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
@@ -118,7 +271,7 @@ const Index = () => {
               />
             </div>
             <p className="mt-3 px-2 text-xs text-muted-foreground">
-              اضغط Escape للإغلاق. البحث المتقدم بالتاريخ والوسم سيتوفر لاحقاً.
+              اضغط Escape للإغلاق. البحث الدلالي بـ CLIP سيتوفر في خطوة الذكاء الاصطناعي.
             </p>
           </div>
         </div>

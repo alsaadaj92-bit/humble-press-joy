@@ -1,4 +1,4 @@
-import { Images, LibraryBig, Cloud, Settings, Search } from "lucide-react";
+import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -9,7 +9,10 @@ interface SidebarProps {
 
 const items = [
   { id: "photos", label: "الصور", icon: Images },
+  { id: "favorites", label: "المفضلة", icon: Heart },
   { id: "albums", label: "الألبومات", icon: LibraryBig },
+  { id: "archive", label: "الأرشيف", icon: Archive },
+  { id: "trash", label: "سلة المحذوفات", icon: Trash2 },
   { id: "providers", label: "مزودو التخزين", icon: Cloud },
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
@@ -35,7 +38,7 @@ export function GallerySidebar({ active, onSelect, onSearchClick }: SidebarProps
         <span>ابحث في صورك</span>
       </button>
 
-      <nav className="flex-1 space-y-1 px-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
@@ -58,7 +61,7 @@ export function GallerySidebar({ active, onSelect, onSearchClick }: SidebarProps
       </nav>
 
       <div className="border-t border-sidebar-border px-5 py-4 text-[11px] text-muted-foreground">
-        المرحلة 1 · واجهة تجريبية بصور Picsum
+        اختصارات: F مفضلة · E أرشيف · Del حذف · / بحث
       </div>
     </aside>
   );
