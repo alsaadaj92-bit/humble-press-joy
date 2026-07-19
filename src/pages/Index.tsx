@@ -9,6 +9,7 @@ import { SelectionToolbar } from "@/components/gallery/SelectionToolbar";
 import { ProvidersPanel } from "@/components/gallery/ProvidersPanel";
 import { SyncCenter } from "@/components/gallery/SyncCenter";
 import { AlbumsPanel } from "@/components/gallery/AlbumsPanel";
+import { MemoriesPanel } from "@/components/gallery/MemoriesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -264,6 +265,15 @@ const Index = () => {
             </>
           )}
 
+          {activeSection === "memories" && (
+            <>
+              <SectionHero
+                title="الذكريات"
+                subtitle="لحظات مختارة من مكتبتك — تُبنى محلياً بدون أي خادم"
+              />
+              <MemoriesPanel photos={allPhotos} />
+            </>
+          )}
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "providers" && <ProvidersPanel />}
           {activeSection === "sync" && <SyncCenter />}

@@ -1,4 +1,4 @@
-import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw } from "lucide-react";
+import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -11,6 +11,7 @@ interface SidebarProps {
 
 const items = [
   { id: "photos", label: "الصور", icon: Images },
+  { id: "memories", label: "الذكريات", icon: Sparkles },
   { id: "favorites", label: "المفضلة", icon: Heart },
   { id: "albums", label: "الألبومات", icon: LibraryBig },
   { id: "archive", label: "الأرشيف", icon: Archive },
