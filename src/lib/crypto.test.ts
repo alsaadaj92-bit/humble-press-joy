@@ -3,14 +3,17 @@
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { webcrypto } from "node:crypto";
+import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import "fake-indexeddb/auto";
 
-
-
-// jsdom lacks crypto.subtle; graft Node's WebCrypto in.
+// jsdom clobbers Blob/File without arrayBuffer() and lacks crypto.subtle.
+// Restore Node's implementations so the WebCrypto pipeline can round-trip.
 if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
 }
+Object.defineProperty(globalThis, "Blob", { value: NodeBlob, configurable: true });
+Object.defineProperty(globalThis, "File", { value: NodeFile, configurable: true });
+
 
 import {
   setupE2EE,
