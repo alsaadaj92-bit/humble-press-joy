@@ -108,6 +108,13 @@ export async function retryAllFailed() {
   );
 }
 export async function removeJob(id: string) {
+  const job = await photoDb.syncJobs.get(id);
+  if (job?.provider === "localServer") {
+    const cfg = await photoDb.providers.get("localServer");
+    if (cfg?.baseUrl) {
+      try { await localServerAbort(cfg.baseUrl, id); } catch { /* ignore */ }
+    }
+  }
   await photoDb.syncJobs.delete(id);
 }
 export async function clearCompleted() {
