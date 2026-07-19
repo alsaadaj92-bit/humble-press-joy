@@ -16,6 +16,7 @@ import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
+import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
@@ -25,6 +26,7 @@ import { useResolvedAssets } from "@/hooks/useResolvedAssets";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
+import { buildTimelineBuckets } from "@/lib/timeline";
 
 
 const Index = () => {
