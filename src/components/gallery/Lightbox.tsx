@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Info, Pencil, X, ZoomIn, ZoomOut } from "lucide-react";
 import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { photoDb } from "@/lib/photoDb";
 import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
 import { MiniMap } from "./MiniMap";
 import { PhotoEditor } from "./PhotoEditor";
+import { ZoomableImage } from "./ZoomableImage";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -16,6 +17,7 @@ interface LightboxProps {
 
 export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProps) {
   const [zoomed, setZoomed] = useState(false);
+  const zoomedRef = useRef(false);
   const [showInfo, setShowInfo] = useState(false);
   const [editing, setEditing] = useState(false);
   const [exif, setExif] = useState<ExifData | null>(null);
@@ -61,12 +63,17 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose, goPrev, goNext]);
 
-  // Basic swipe support
+  // Basic swipe support — disabled while pinch-zoomed so panning doesn't jump photos.
   useEffect(() => {
     if (!open) return;
     let startX = 0;
-    const onTouchStart = (e: TouchEvent) => (startX = e.touches[0].clientX);
+    let startTouches = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      startTouches = e.touches.length;
+      startX = e.touches[0].clientX;
+    };
     const onTouchEnd = (e: TouchEvent) => {
+      if (zoomedRef.current || startTouches > 1) return;
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) < 50) return;
       // RTL: swipe right => previous
@@ -166,17 +173,7 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
       </button>
 
       {/* Media */}
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center overflow-auto p-4 md:p-10",
-          zoomed && photo.kind !== "video" && "cursor-zoom-out",
-          !zoomed && photo.kind !== "video" && "cursor-zoom-in",
-        )}
-        onClick={(e) => {
-          if (photo.kind === "video") return;
-          if (e.target === e.currentTarget) setZoomed((z) => !z);
-        }}
-      >
+      <div className="flex h-full w-full items-center justify-center p-4 md:p-10">
         {photo.kind === "video" && photo.fullSrc ? (
           <video
             key={photo.id}
@@ -188,16 +185,14 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
             className="max-h-full max-w-full rounded-lg shadow-2xl"
           />
         ) : (
-          <img
+          <ZoomableImage
+            key={photo.id}
             src={fullSrc}
             alt={photo.name}
-            onClick={() => setZoomed((z) => !z)}
-            className={cn(
-              "select-none rounded-lg shadow-2xl transition duration-300",
-              zoomed
-                ? "max-h-none max-w-none scale-[1.6]"
-                : "max-h-full max-w-full object-contain",
-            )}
+            onZoomChange={(z) => {
+              zoomedRef.current = z;
+              setZoomed(z);
+            }}
           />
         )}
       </div>
