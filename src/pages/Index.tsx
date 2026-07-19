@@ -472,6 +472,15 @@ const Index = () => {
 
 
 
+          {activeSection === "library" && (
+            <>
+              <SectionHero
+                title="المكتبة"
+                subtitle="كل مجموعاتك وأدواتك في مكان واحد — على غرار Google Photos"
+              />
+              <LibraryHub onNavigate={setActiveSection} />
+            </>
+          )}
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
             <>
