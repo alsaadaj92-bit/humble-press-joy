@@ -161,12 +161,14 @@ export async function restoreBackup(
 
   await photoDb.transaction(
     "rw",
-    photoDb.states,
-    photoDb.assets,
-    photoDb.albums,
-    photoDb.topicRules,
-    photoDb.providers,
-    photoDb.kv,
+    [
+      photoDb.states,
+      photoDb.assets,
+      photoDb.albums,
+      photoDb.topicRules,
+      photoDb.providers,
+      photoDb.kv,
+    ],
     async () => {
       if (mode === "replace") {
         await Promise.all([
