@@ -4,6 +4,7 @@ import { picsumUrl, type MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
 import { photoDb } from "@/lib/photoDb";
 import { formatExposure, orientationLabel, type ExifData } from "@/lib/exif";
+import { MiniMap } from "./MiniMap";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -215,10 +216,15 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
                   />
                 )}
                 {exif.gps && (
-                  <InfoField
-                    label="الموقع"
-                    value={`${exif.gps.lat.toFixed(5)}, ${exif.gps.lon.toFixed(5)}`}
-                  />
+                  <>
+                    <InfoField
+                      label="الموقع"
+                      value={`${exif.gps.lat.toFixed(5)}, ${exif.gps.lon.toFixed(5)}`}
+                    />
+                    <div className="!mt-2">
+                      <MiniMap lat={exif.gps.lat} lon={exif.gps.lon} />
+                    </div>
+                  </>
                 )}
               </>
             ) : (
