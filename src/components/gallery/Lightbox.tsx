@@ -173,17 +173,7 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
       </button>
 
       {/* Media */}
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center overflow-auto p-4 md:p-10",
-          zoomed && photo.kind !== "video" && "cursor-zoom-out",
-          !zoomed && photo.kind !== "video" && "cursor-zoom-in",
-        )}
-        onClick={(e) => {
-          if (photo.kind === "video") return;
-          if (e.target === e.currentTarget) setZoomed((z) => !z);
-        }}
-      >
+      <div className="flex h-full w-full items-center justify-center p-4 md:p-10">
         {photo.kind === "video" && photo.fullSrc ? (
           <video
             key={photo.id}
@@ -195,16 +185,14 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
             className="max-h-full max-w-full rounded-lg shadow-2xl"
           />
         ) : (
-          <img
+          <ZoomableImage
+            key={photo.id}
             src={fullSrc}
             alt={photo.name}
-            onClick={() => setZoomed((z) => !z)}
-            className={cn(
-              "select-none rounded-lg shadow-2xl transition duration-300",
-              zoomed
-                ? "max-h-none max-w-none scale-[1.6]"
-                : "max-h-full max-w-full object-contain",
-            )}
+            onZoomChange={(z) => {
+              zoomedRef.current = z;
+              setZoomed(z);
+            }}
           />
         )}
       </div>
