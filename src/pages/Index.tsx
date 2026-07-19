@@ -28,6 +28,7 @@ import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
+import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
@@ -48,10 +49,6 @@ const STUB_SECTIONS: Record<string, { title: string; body: string }> = {
   things: {
     title: "الأشياء",
     body: "تصنيف الصور حسب المحتوى (طعام، سيارات، حيوانات...) — سيصل قريباً باستخدام CLIP محلياً.",
-  },
-  creations: {
-    title: "أفلام ومجمعات",
-    body: "إنشاء أفلام قصيرة ومجمعات وصور متحركة من صورك — قريباً.",
   },
   starred: { title: "المميّزة بنجمة", body: "علامات نجوم مخصصة إلى جانب المفضلة — قريباً." },
   partner: { title: "مكتبة الشريك", body: "مشاركة كل مكتبتك تلقائياً مع شخص تثق به — قريباً." },
@@ -391,6 +388,17 @@ const Index = () => {
               <CategoriesPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
             </>
           )}
+
+          {activeSection === "creations" && (
+            <>
+              <SectionHero
+                title="أفلام ومجمّعات"
+                subtitle="أنشئ مجمّعات وأفلاماً قصيرة ومتحركات من صورك — كل شيء يُبنى داخل متصفحك، بدون أي رفع"
+              />
+              <CreationsPanel photos={allPhotos} />
+            </>
+          )}
+
 
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
