@@ -12,9 +12,15 @@ import {
   type SyncSettings,
 } from "@/lib/photoDb";
 import { extractExif } from "@/lib/exif";
-import { telegramSendDocument } from "@/lib/providers/telegram";
+import { telegramSendDocument, telegramCreateForumTopic } from "@/lib/providers/telegram";
 import { localServerUpload } from "@/lib/providers/localServer";
 import { pickTopicForAsset } from "@/lib/topicRouting";
+import {
+  ensureAutoAlbumsForDate,
+  pickAlbumTopicForDate,
+  setAlbumTopic,
+  getUploaderName,
+} from "@/lib/albums";
 import { getActiveProviderKind } from "@/lib/providers";
 
 const SETTINGS_KEY = "syncSettings";
