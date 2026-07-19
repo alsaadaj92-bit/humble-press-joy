@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Menu, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { GallerySidebar } from "@/components/gallery/Sidebar";
 import { PhotoGrid } from "@/components/gallery/PhotoGrid";
@@ -15,6 +15,8 @@ import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { EncryptionPanel } from "@/components/gallery/EncryptionPanel";
+import { SharingPanel } from "@/components/gallery/SharingPanel";
+import { TopBar } from "@/components/gallery/TopBar";
 
 import { SmartSearchPanel } from "@/components/gallery/SmartSearchPanel";
 import { PeoplePanel } from "@/components/gallery/PeoplePanel";
@@ -36,6 +38,28 @@ import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useTrashSweeper } from "@/hooks/useTrashSweeper";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 import { buildTimelineBuckets } from "@/lib/timeline";
+
+// Sections that fall back to "coming soon" placeholders.
+const STUB_SECTIONS: Record<string, { title: string; body: string }> = {
+  things: {
+    title: "الأشياء",
+    body: "تصنيف الصور حسب المحتوى (طعام، سيارات، حيوانات...) — سيصل قريباً باستخدام CLIP محلياً.",
+  },
+  videos: { title: "الفيديوهات", body: "عرض مخصص لكل مقاطع الفيديو — قريباً." },
+  selfies: { title: "السيلفي", body: "تصنيف تلقائي للصور الذاتية عبر كشف الوجوه — قريباً." },
+  screenshots: {
+    title: "لقطات الشاشة",
+    body: "فرز آلي للقطات الشاشة عبر نسبة العرض والـ EXIF — قريباً.",
+  },
+  creations: {
+    title: "أفلام ومجمعات",
+    body: "إنشاء أفلام قصيرة ومجمعات وصور متحركة من صورك — قريباً.",
+  },
+  starred: { title: "المميّزة بنجمة", body: "علامات نجوم مخصصة إلى جانب المفضلة — قريباً." },
+  partner: { title: "مكتبة الشريك", body: "مشاركة كل مكتبتك تلقائياً مع شخص تثق به — قريباً." },
+  print: { title: "متجر الطباعة", body: "طلب طباعة صورك على ورق أو كتاب — قريباً." },
+};
+
 
 
 const Index = () => {
