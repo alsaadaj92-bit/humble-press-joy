@@ -2,6 +2,8 @@ import { photoDb, type MediaAsset, type ProviderConfig, type ProviderKind } from
 import { extractExif } from "@/lib/exif";
 import { telegramFileUrl, telegramGetFilePath, telegramSendDocument } from "./telegram";
 import { localServerUpload } from "./localServer";
+import { decryptBlob, isUnlocked as isE2EEUnlocked } from "@/lib/crypto";
+
 
 export async function saveProviderConfig(cfg: ProviderConfig) {
   await photoDb.providers.put(cfg);
