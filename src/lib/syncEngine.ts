@@ -312,5 +312,27 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   } finally {
     running = false;
   }
+  if (processed > 0 || failed > 0) {
+    try {
+      const { notify } = await import("./notifications");
+      if (failed > 0) {
+        await notify({
+          title: "فشل مزامنة بعض الملفات",
+          body: `${failed} فشل · ${processed} نجح`,
+          tag: "sync-status",
+          onlyWhenHidden: true,
+        });
+      } else {
+        await notify({
+          title: "اكتملت المزامنة",
+          body: `تم رفع ${processed} ملف بنجاح`,
+          tag: "sync-status",
+          onlyWhenHidden: true,
+        });
+      }
+    } catch {
+      /* notifications are best-effort */
+    }
+  }
   return { processed, failed };
 }
