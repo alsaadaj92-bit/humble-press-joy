@@ -132,6 +132,25 @@ export interface EmbeddingRow {
   updatedAt: number;
 }
 
+// --- Faces (local, on-device only) -----------------------------------------
+export interface FaceRow {
+  id: string;              // `${assetId}:${index}`
+  assetId: string;
+  descriptor: number[];    // 128-D unit vector from face-api
+  box: { x: number; y: number; width: number; height: number };
+  personId?: string;
+  detectedAt: number;
+}
+
+export interface PersonRow {
+  id: string;              // stable cluster id (e.g. "p-3") or user-created
+  name?: string;
+  coverFaceId?: string;
+  createdAt: number;
+  updatedAt: number;
+  hidden?: boolean;
+}
+
 class PhotoDatabase extends Dexie {
   states!: Table<PhotoState, string>;
   providers!: Table<ProviderConfig, ProviderKind>;
@@ -141,6 +160,8 @@ class PhotoDatabase extends Dexie {
   syncJobs!: Table<SyncJob, string>;
   albums!: Table<Album, string>;
   embeddings!: Table<EmbeddingRow, string>;
+  faces!: Table<FaceRow, string>;
+  persons!: Table<PersonRow, string>;
 
   constructor() {
     super("localgallery-pro");
@@ -180,6 +201,18 @@ class PhotoDatabase extends Dexie {
       syncJobs: "id, status, createdAt, updatedAt",
       albums: "id, kind, key, updatedAt",
       embeddings: "id, modelId, updatedAt",
+    });
+    this.version(7).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      embeddings: "id, modelId, updatedAt",
+      faces: "id, assetId, personId, detectedAt",
+      persons: "id, updatedAt, hidden",
     });
   }
 }
