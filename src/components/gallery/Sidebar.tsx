@@ -127,7 +127,7 @@ export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: Si
           <Images className="h-5 w-5" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">LocalGallery Pro</p>
+          <p className="text-sm font-semibold">Localphotos Pro</p>
           <p className="text-[11px] text-muted-foreground">بدون سحابة · خاص بك</p>
         </div>
       </div>
