@@ -14,6 +14,11 @@ import {
 import { extractExif } from "@/lib/exif";
 import { telegramSendDocument, telegramCreateForumTopic } from "@/lib/providers/telegram";
 import { localServerUpload } from "@/lib/providers/localServer";
+import {
+  localServerUploadChunked,
+  localServerSupportsChunked,
+  localServerAbort,
+} from "@/lib/providers/localServerChunked";
 import { pickTopicForAsset } from "@/lib/topicRouting";
 import {
   ensureAutoAlbumsForDate,
