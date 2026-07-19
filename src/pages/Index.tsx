@@ -19,6 +19,8 @@ import { PeoplePanel } from "@/components/gallery/PeoplePanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
+import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
@@ -39,6 +41,8 @@ const Index = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLElement>(null);
@@ -281,8 +285,10 @@ const Index = () => {
               onTrash={doTrash}
               onRestore={doRestore}
               onSelectAll={selectAll}
+              onAddToAlbum={() => setPickerOpen(true)}
             />
           )}
+
 
           {sectionMeta[activeSection] && (
             <>
@@ -381,6 +387,13 @@ const Index = () => {
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
       />
+
+      <AlbumPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        assetIds={selectedIds}
+      />
+
 
       {searchOpen && (
         <div
