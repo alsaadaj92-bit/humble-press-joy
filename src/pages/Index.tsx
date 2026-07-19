@@ -85,6 +85,7 @@ const Index = () => {
   const uploadedPhotos = useResolvedAssets(assets, providers);
   useSyncLoop();
   useTrashSweeper();
+  useAutoPipelineLoop();
 
 
   // Uploaded assets first (newest), then mocks — sorted by date desc.
