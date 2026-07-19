@@ -27,6 +27,7 @@ import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
+import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
