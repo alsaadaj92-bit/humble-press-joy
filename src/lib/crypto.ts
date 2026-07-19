@@ -175,7 +175,7 @@ export async function encryptFile(file: File): Promise<{ blob: Blob; meta: Encry
     await crypto.subtle.encrypt({ name: "AES-GCM", iv: bs(wrapIv) }, sessionKey, bs(rawFileKey)),
   );
   const fileIv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = new Uint8Array(await new Response(file).arrayBuffer());
+  const plaintext = await readAll(file);
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt({ name: "AES-GCM", iv: bs(fileIv) }, fileKey, bs(plaintext)),
   );
@@ -203,7 +203,7 @@ export async function encryptFile(file: File): Promise<{ blob: Blob; meta: Encry
 
 export async function decryptBlob(encrypted: Blob, meta: EncryptionMeta): Promise<Blob> {
   if (!sessionKey) throw new Error("التشفير مقفل — افتح القفل أولاً");
-  const buf = new Uint8Array(await new Response(encrypted).arrayBuffer());
+  const buf = await readAll(encrypted);
 
   if (buf.length < 32) throw new Error("ملف مشفّر تالف");
   for (let i = 0; i < 4; i++) {
