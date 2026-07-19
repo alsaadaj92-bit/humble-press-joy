@@ -65,7 +65,7 @@ export function TimelineScrubber({ buckets, scrollRef }: Props) {
   return (
     <div
       ref={railRef}
-      className="pointer-events-auto absolute inset-y-4 left-2 z-30 hidden w-14 select-none md:flex md:flex-col md:items-stretch"
+      className="group pointer-events-auto absolute inset-y-4 left-1 z-30 hidden w-3 select-none transition-all hover:w-10 md:flex md:flex-col md:items-stretch"
       onMouseDown={(e) => {
         setDragging(true);
         const b = bucketAtY(e.clientY);
@@ -82,7 +82,7 @@ export function TimelineScrubber({ buckets, scrollRef }: Props) {
       }}
       onMouseUp={() => setDragging(false)}
     >
-      <div className="flex h-full flex-col justify-between rounded-full bg-card/70 py-3 text-[10px] font-medium text-muted-foreground shadow-lg backdrop-blur">
+      <div className="flex h-full flex-col justify-between rounded-full py-3 text-[10px] font-medium text-muted-foreground opacity-0 transition-all group-hover:bg-card/80 group-hover:opacity-100 group-hover:shadow-lg group-hover:backdrop-blur">
         {years.map((y) => {
           const isActive = activeKey?.startsWith(String(y.year));
           return (
@@ -94,7 +94,7 @@ export function TimelineScrubber({ buckets, scrollRef }: Props) {
               }}
               className={cn(
                 "mx-auto w-full rounded-full px-1 py-1 transition",
-                isActive ? "text-primary font-bold" : "hover:text-foreground",
+                isActive ? "font-bold text-primary" : "hover:text-foreground",
               )}
             >
               {y.year}
@@ -104,7 +104,7 @@ export function TimelineScrubber({ buckets, scrollRef }: Props) {
       </div>
 
       {hoverKey && (
-        <div className="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg">
+        <div className="pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg">
           {buckets.find((b) => b.key === hoverKey)?.label}
         </div>
       )}
