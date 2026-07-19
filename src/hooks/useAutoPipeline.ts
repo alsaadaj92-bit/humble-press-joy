@@ -36,6 +36,11 @@ export function useAutoPipelineStatus(): PipelineStatus {
     failed: 0,
     queued: 0,
   });
-  useEffect(() => subscribeStatus(setS), []);
+  useEffect(() => {
+    const unsub = subscribeStatus(setS);
+    return () => {
+      unsub();
+    };
+  }, []);
   return s;
 }
