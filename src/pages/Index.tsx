@@ -405,6 +405,18 @@ const Index = () => {
             </>
           )}
 
+          {activeSection === "locked" && (
+            <>
+              <SectionHero
+                title="المجلد المؤمَّن"
+                subtitle="صور محمية برمز PIN محلي — لا تظهر في البحث ولا الذكريات ولا أي قسم آخر"
+              />
+              <LockedFolderPanel photos={allPhotos} states={states} onOpen={setLightboxIndex} />
+            </>
+          )}
+
+
+
 
           {activeSection === "albums" && <AlbumsPanel />}
           {activeSection === "duplicates" && (
