@@ -274,6 +274,10 @@ const Index = () => {
           onOpenDrawer={() => setDrawerOpen(true)}
           onSelectSection={setActiveSection}
         />
+        <div className="pointer-events-none absolute right-4 top-14 z-30 md:top-16">
+          <div className="pointer-events-auto"><AutoPipelineBadge /></div>
+        </div>
+        <AutoPipelineConsent />
         {queryChips.length > 0 && (
           <div className="flex flex-wrap gap-1.5 border-b border-border bg-background/60 px-4 py-2 md:px-8">
             {queryChips.map((c) => (
