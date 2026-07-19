@@ -145,7 +145,9 @@ export function PhotoGrid({
             })}
           </div>
         </section>
-      ))}
+        </section>
+        );
+      })}
 
       {photos.length === 0 && (
         <div className="mx-auto max-w-md rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
