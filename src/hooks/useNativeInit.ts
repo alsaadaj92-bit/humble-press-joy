@@ -4,7 +4,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { Network } from "@capacitor/network";
 import { isNative, notify } from "@/lib/native";
-import { runOnce } from "@/lib/syncEngine";
+import { runSyncCycle } from "@/lib/syncEngine";
 
 // Boots native-only integrations: status bar, splash, resume/network triggers.
 // Safe on the web — every call short-circuits when Capacitor isn't present.
@@ -21,7 +21,7 @@ export function useNativeInit() {
     // network becomes available. This is our "background sync" surrogate on
     // devices that heavily throttle real background tasks.
     const runSync = () => {
-      void runOnce().catch(() => undefined);
+      void runSyncCycle().catch(() => undefined);
     };
 
     const appSub = App.addListener("appStateChange", (s) => {
