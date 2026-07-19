@@ -13,6 +13,7 @@ import { MemoriesPanel } from "@/components/gallery/MemoriesPanel";
 import { PlacesPanel } from "@/components/gallery/PlacesPanel";
 import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
+import { BackupPanel } from "@/components/gallery/BackupPanel";
 import { MobileNav } from "@/components/gallery/MobileNav";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
