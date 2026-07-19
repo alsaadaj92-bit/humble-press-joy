@@ -186,7 +186,7 @@ export function ZoomableImage({ src, alt, className, onZoomChange }: ZoomableIma
         src={src}
         alt={alt}
         draggable={false}
-        className={cn("max-h-full max-w-full select-none rounded-lg shadow-2xl", className)}
+        className={cn("vt-active-photo max-h-full max-w-full select-none rounded-lg shadow-2xl", className)}
         style={{
           transform: `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`,
           transformOrigin: "center center",
