@@ -14,6 +14,8 @@ import { PlacesPanel } from "@/components/gallery/PlacesPanel";
 import { DuplicatesPanel } from "@/components/gallery/DuplicatesPanel";
 import { IdentityCard } from "@/components/gallery/IdentityCard";
 import { BackupPanel } from "@/components/gallery/BackupPanel";
+import { EncryptionPanel } from "@/components/gallery/EncryptionPanel";
+
 import { SmartSearchPanel } from "@/components/gallery/SmartSearchPanel";
 import { PeoplePanel } from "@/components/gallery/PeoplePanel";
 import { OcrPanel } from "@/components/gallery/OcrPanel";
