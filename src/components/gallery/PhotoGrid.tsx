@@ -4,6 +4,10 @@ import { groupByDate, picsumThumb, type MockPhoto } from "@/lib/mockPhotos";
 import type { PhotoState } from "@/lib/photoDb";
 import { cn } from "@/lib/utils";
 
+const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
+  p === "telegram" ? "Telegram" : p === "localServer" ? "Local" : "FS";
+
+
 interface PhotoGridProps {
   photos: MockPhoto[];
   onOpen: (index: number) => void;
@@ -78,6 +82,9 @@ export function PhotoGrid({
                         {providerLabel(photo.provider)}
                       </span>
                     )}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
+
 
                   {/* Selection check (top-right in RTL = top-left visual) */}
                   <button
