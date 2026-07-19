@@ -23,8 +23,67 @@ import {
   runSyncCycle,
   setSyncSettings,
 } from "@/lib/syncEngine";
-import type { SyncJob, SyncMode } from "@/lib/photoDb";
+import type { SyncJob, SyncMode, SyncSettings } from "@/lib/photoDb";
 import { cn } from "@/lib/utils";
+
+type CompressPreset = "original" | "high" | "balanced" | "small";
+
+const PRESETS: Record<Exclude<CompressPreset, "original">, Partial<SyncSettings>> = {
+  high: { compressEnabled: true, compressFormat: "webp", compressQuality: 0.9, compressMaxDim: 3840, compressSkipUnderKb: 300 },
+  balanced: { compressEnabled: true, compressFormat: "webp", compressQuality: 0.82, compressMaxDim: 2560, compressSkipUnderKb: 300 },
+  small: { compressEnabled: true, compressFormat: "webp", compressQuality: 0.65, compressMaxDim: 1600, compressSkipUnderKb: 150 },
+};
+
+function currentPreset(s: SyncSettings): CompressPreset | "custom" {
+  if (!s.compressEnabled) return "original";
+  for (const [name, p] of Object.entries(PRESETS)) {
+    if (
+      s.compressFormat === p.compressFormat &&
+      Math.abs(s.compressQuality - (p.compressQuality as number)) < 0.01 &&
+      s.compressMaxDim === p.compressMaxDim
+    ) {
+      return name as CompressPreset;
+    }
+  }
+  return "custom";
+}
+
+function applyPreset(value: CompressPreset) {
+  if (value === "original") {
+    setSyncSettings({ compressEnabled: false });
+  } else {
+    setSyncSettings(PRESETS[value]);
+  }
+}
+
+function PresetCard({
+  current,
+  value,
+  title,
+  desc,
+}: {
+  current: CompressPreset | "custom";
+  value: CompressPreset;
+  title: string;
+  desc: string;
+}) {
+  const active = current === value;
+  return (
+    <button
+      onClick={() => applyPreset(value)}
+      className={cn(
+        "space-y-1 rounded-xl border p-3 text-start transition",
+        active ? "border-primary bg-primary/10" : "border-border bg-secondary/30 hover:bg-secondary/60",
+      )}
+    >
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        {active && <CheckCircle2 className="h-4 w-4 text-primary" />}
+        <span>{title}</span>
+      </div>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{desc}</p>
+    </button>
+  );
+}
 
 export function SyncCenter() {
   const jobs = useSyncJobs();
