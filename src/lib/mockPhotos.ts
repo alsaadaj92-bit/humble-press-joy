@@ -14,6 +14,12 @@ export interface MockPhoto {
   fullSrc?: string;
   /** Which storage provider produced this item, if any. */
   provider?: "telegram" | "localServer" | "fileSystem";
+  /** Media kind — defaults to image. */
+  kind?: "image" | "video";
+  /** Video duration in seconds (when kind === "video"). */
+  duration?: number;
+  /** Video mime (helps `<video>` pick a decoder). */
+  mime?: string;
 }
 
 const HEIGHTS = [320, 400, 500, 380, 460, 540, 360, 420, 480, 600, 340, 520];

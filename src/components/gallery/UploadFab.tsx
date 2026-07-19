@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { extractExif, formatExposure, orientationLabel } from "@/lib/exif";
+import { extractVideoMeta, formatDuration, isVideoMime } from "@/lib/video";
 import { useProviders } from "@/hooks/useProviders";
 import { enqueueFiles, getSyncSettings } from "@/lib/syncEngine";
 import type { MediaAsset } from "@/lib/photoDb";
@@ -24,9 +25,11 @@ export function UploadFab() {
   const { active, activeConfig } = useProviders();
 
   const handleFiles = async (files: FileList | File[]) => {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const arr = Array.from(files).filter(
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+    );
     if (!arr.length) {
-      toast.error("لم يتم اختيار صور");
+      toast.error("لم يتم اختيار صور أو مقاطع");
       return;
     }
 
@@ -41,28 +44,46 @@ export function UploadFab() {
     }));
     setRows(initial);
 
-    // Extract EXIF locally for preview (works with or without a provider).
+    // Extract metadata locally for preview (works with or without a provider).
     for (let i = 0; i < arr.length; i++) {
       const file = arr[i];
+      const isVideo = isVideoMime(file.type);
       try {
-        const exif = await extractExif(file);
+        let asset: MediaAsset;
+        if (isVideo) {
+          const meta = await extractVideoMeta(file);
+          asset = {
+            id: initial[i].key,
+            provider: active ?? "telegram",
+            name: file.name,
+            size: file.size,
+            mime: file.type,
+            width: meta.width,
+            height: meta.height,
+            date: file.lastModified,
+            createdAt: Date.now(),
+            kind: "video",
+            duration: meta.duration,
+            posterDataUrl: meta.posterDataUrl,
+          };
+        } else {
+          const exif = await extractExif(file);
+          asset = {
+            id: initial[i].key,
+            provider: active ?? "telegram",
+            name: file.name,
+            size: file.size,
+            mime: file.type,
+            date: exif.dateTaken ?? file.lastModified,
+            createdAt: Date.now(),
+            exif,
+            kind: "image",
+          };
+        }
         setRows((prev) =>
           prev?.map((r, idx) =>
             idx === i
-              ? {
-                  ...r,
-                  status: hasProvider ? "queued" : "skipped",
-                  asset: {
-                    id: r.key,
-                    provider: active ?? "telegram",
-                    name: file.name,
-                    size: file.size,
-                    mime: file.type,
-                    date: exif.dateTaken ?? file.lastModified,
-                    createdAt: Date.now(),
-                    exif,
-                  } as MediaAsset,
-                }
+              ? { ...r, status: hasProvider ? "queued" : "skipped", asset }
               : r,
           ) ?? null,
         );
@@ -103,7 +124,7 @@ export function UploadFab() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -199,6 +220,7 @@ function ImportModal({ rows, onClose }: { rows: Row[]; onClose: () => void }) {
 function RowItem({ row }: { row: Row }) {
   const { asset } = row;
   const exif = asset?.exif;
+  const isVideo = asset?.kind === "video";
   const dateLabel = exif?.dateTaken
     ? new Intl.DateTimeFormat("ar-EG", { dateStyle: "full", timeStyle: "short" }).format(
         exif.dateTaken,
@@ -217,37 +239,64 @@ function RowItem({ row }: { row: Row }) {
 
   return (
     <div className="flex gap-4 p-4">
-      <img
-        src={row.previewUrl}
-        alt={row.name}
-        className="h-24 w-24 flex-shrink-0 rounded-lg object-cover"
-      />
+      <div className="relative h-24 w-24 flex-shrink-0">
+        <img
+          src={asset?.posterDataUrl ?? row.previewUrl}
+          alt={row.name}
+          className="h-24 w-24 rounded-lg object-cover"
+        />
+        {isVideo && (
+          <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            ▶ {asset?.duration ? formatDuration(asset.duration) : "…"}
+          </span>
+        )}
+      </div>
       <div className="min-w-0 flex-1 space-y-1.5 text-sm">
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
           <StatusBadge status={row.status} message={row.message} />
         </div>
-        <Field icon={<Calendar className="h-3.5 w-3.5" />} label="التاريخ" value={dateLabel} />
-        <Field
-          icon={<Camera className="h-3.5 w-3.5" />}
-          label="الكاميرا"
-          value={exif?.camera ?? "—"}
-        />
-        <Field
-          icon={<Aperture className="h-3.5 w-3.5" />}
-          label="العدسة"
-          value={exif?.lens ?? "—"}
-        />
-        {settings && <Field label="الإعدادات" value={settings} />}
-        {exif?.orientation && (
-          <Field label="الاتجاه" value={orientationLabel(exif.orientation) ?? "-"} />
-        )}
-        {exif?.gps && (
-          <Field
-            icon={<MapPin className="h-3.5 w-3.5" />}
-            label="الموقع"
-            value={`${exif.gps.lat.toFixed(5)}, ${exif.gps.lon.toFixed(5)}`}
-          />
+        {isVideo ? (
+          <>
+            <Field label="النوع" value="فيديو" />
+            <Field
+              label="الأبعاد"
+              value={
+                asset?.width && asset?.height
+                  ? `${asset.width} × ${asset.height}`
+                  : "—"
+              }
+            />
+            <Field
+              label="المدة"
+              value={asset?.duration ? formatDuration(asset.duration) : "—"}
+            />
+          </>
+        ) : (
+          <>
+            <Field icon={<Calendar className="h-3.5 w-3.5" />} label="التاريخ" value={dateLabel} />
+            <Field
+              icon={<Camera className="h-3.5 w-3.5" />}
+              label="الكاميرا"
+              value={exif?.camera ?? "—"}
+            />
+            <Field
+              icon={<Aperture className="h-3.5 w-3.5" />}
+              label="العدسة"
+              value={exif?.lens ?? "—"}
+            />
+            {settings && <Field label="الإعدادات" value={settings} />}
+            {exif?.orientation && (
+              <Field label="الاتجاه" value={orientationLabel(exif.orientation) ?? "-"} />
+            )}
+            {exif?.gps && (
+              <Field
+                icon={<MapPin className="h-3.5 w-3.5" />}
+                label="الموقع"
+                value={`${exif.gps.lat.toFixed(5)}, ${exif.gps.lon.toFixed(5)}`}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

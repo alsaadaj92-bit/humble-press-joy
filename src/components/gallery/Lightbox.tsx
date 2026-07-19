@@ -146,29 +146,41 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
         <ChevronLeft className="h-6 w-6" />
       </button>
 
-      {/* Image */}
+      {/* Media */}
       <div
         className={cn(
           "flex h-full w-full items-center justify-center overflow-auto p-4 md:p-10",
-          zoomed && "cursor-zoom-out",
-          !zoomed && "cursor-zoom-in",
+          zoomed && photo.kind !== "video" && "cursor-zoom-out",
+          !zoomed && photo.kind !== "video" && "cursor-zoom-in",
         )}
         onClick={(e) => {
-          // Only toggle zoom on background click, not on image
+          if (photo.kind === "video") return;
           if (e.target === e.currentTarget) setZoomed((z) => !z);
         }}
       >
-        <img
-          src={fullSrc}
-          alt={photo.name}
-          onClick={() => setZoomed((z) => !z)}
-          className={cn(
-            "select-none rounded-lg shadow-2xl transition duration-300",
-            zoomed
-              ? "max-h-none max-w-none scale-[1.6]"
-              : "max-h-full max-w-full object-contain",
-          )}
-        />
+        {photo.kind === "video" && photo.fullSrc ? (
+          <video
+            key={photo.id}
+            src={photo.fullSrc}
+            poster={photo.thumbSrc}
+            controls
+            autoPlay
+            playsInline
+            className="max-h-full max-w-full rounded-lg shadow-2xl"
+          />
+        ) : (
+          <img
+            src={fullSrc}
+            alt={photo.name}
+            onClick={() => setZoomed((z) => !z)}
+            className={cn(
+              "select-none rounded-lg shadow-2xl transition duration-300",
+              zoomed
+                ? "max-h-none max-w-none scale-[1.6]"
+                : "max-h-full max-w-full object-contain",
+            )}
+          />
+        )}
       </div>
 
       {/* Info panel */}

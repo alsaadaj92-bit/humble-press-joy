@@ -41,6 +41,12 @@ export interface MediaAsset {
   telegram?: { fileId: string; messageId?: number; filePath?: string };
   local?: { url: string; path: string };
   fs?: { path: string };
+  /** Media kind — defaults to image when omitted. */
+  kind?: "image" | "video";
+  /** Video duration in seconds. */
+  duration?: number;
+  /** Data URL poster frame for videos (kept small — under ~100KB). */
+  posterDataUrl?: string;
 }
 
 export interface KV {
