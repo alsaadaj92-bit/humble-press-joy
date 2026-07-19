@@ -128,6 +128,7 @@ export function PhotoGrid({
               return (
                 <div
                   key={photo.id}
+                  data-tile={photo.id}
                   className={cn(
                     "masonry-item group relative w-full overflow-hidden rounded-lg bg-secondary",
                     isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
