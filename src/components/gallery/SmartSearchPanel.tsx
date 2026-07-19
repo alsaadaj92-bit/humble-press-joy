@@ -51,7 +51,7 @@ export function SmartSearchPanel({ photos, states, onOpen }: Props) {
   }, [running]);
 
   const eligible = useMemo(
-    () => photos.filter((p) => !!p.src),
+    () => photos.filter((p) => p.kind !== "video"),
     [photos],
   );
   const missingCount = useMemo(async () => 0, []);
@@ -100,7 +100,8 @@ export function SmartSearchPanel({ photos, states, onOpen }: Props) {
       for (const p of todo) {
         if (cancelReq) break;
         try {
-          const vec = await embedImageFromUrl(p.src);
+          const url = p.thumbSrc ?? picsumThumb(p.seed, 224);
+          const vec = await embedImageFromUrl(url);
           await putEmbedding(p.id, vec);
         } catch (err) {
           failed += 1;
