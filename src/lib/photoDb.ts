@@ -8,6 +8,8 @@ export interface PhotoState {
   favorite?: boolean;
   archived?: boolean;
   trashedAt?: number;
+  /** Locked Folder — hidden from all views until the folder is unlocked in-session. */
+  locked?: boolean;
   exif?: ExifData;
   sourceName?: string;
   importedAt?: number;
@@ -271,6 +273,20 @@ class PhotoDatabase extends Dexie {
     });
     this.version(9).stores({
       states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      albumMembers: "id, albumId, assetId, addedAt",
+      embeddings: "id, modelId, updatedAt",
+      faces: "id, assetId, personId, detectedAt",
+      persons: "id, updatedAt, hidden",
+      ocr: "id, updatedAt",
+    });
+    this.version(10).stores({
+      states: "id, favorite, archived, trashedAt, importedAt, locked",
       providers: "kind, configured",
       assets: "id, provider, date, createdAt",
       kv: "key",
