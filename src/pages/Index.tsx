@@ -30,6 +30,8 @@ import { PwaStatus } from "@/components/gallery/PwaStatus";
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel";
+import { MagicEraserPanel } from "@/components/gallery/MagicEraserPanel";
+import { LiveAlbumsPanel } from "@/components/gallery/LiveAlbumsPanel";
 
 import { LockedFolderPanel } from "@/components/gallery/LockedFolderPanel";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
@@ -458,6 +460,26 @@ const Index = () => {
             </>
           )}
 
+
+          {activeSection === "eraser" && (
+            <>
+              <SectionHero
+                title="الممحاة السحرية"
+                subtitle="ارسم فوق العنصر المراد إزالته، وسيُعاد بناء الخلفية بخوارزمية انتشار محلية — بدون أي رفع"
+              />
+              <MagicEraserPanel />
+            </>
+          )}
+
+          {activeSection === "live-albums" && (
+            <>
+              <SectionHero
+                title="الألبومات الحية"
+                subtitle="ألبومات تُحدَّث تلقائياً بناءً على قواعد تختارها — كل التقييم يتم داخل متصفحك"
+              />
+              <LiveAlbumsPanel photos={allPhotos} onOpen={setLightboxIndex} />
+            </>
+          )}
 
           {activeSection === "locked" && (
             <>

@@ -80,6 +80,8 @@ const GROUPS: NavGroup[] = [
       { id: "screenshots", label: "لقطات الشاشة", icon: Camera },
       { id: "creations", label: "أفلام ومجمعات", icon: Play },
       { id: "scanner", label: "ماسح المستندات", icon: ScanLine },
+      { id: "eraser", label: "الممحاة السحرية", icon: Wrench },
+      { id: "live-albums", label: "ألبومات حية", icon: Sparkles },
     ],
 
   },
