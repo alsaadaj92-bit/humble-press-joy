@@ -185,11 +185,29 @@ const Index = () => {
         onSearchClick={() => setSearchOpen(true)}
       />
 
-      <main className="scrollbar-thin relative flex-1 overflow-y-auto">
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent side="right" className="w-72 p-0">
+          <GallerySidebar
+            embedded
+            active={activeSection}
+            onSelect={(id) => {
+              setActiveSection(id);
+              setDrawerOpen(false);
+            }}
+            onSearchClick={() => {
+              setDrawerOpen(false);
+              setSearchOpen(true);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <main className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
             aria-label="القائمة"
+            onClick={() => setDrawerOpen(true)}
           >
             <Menu className="h-5 w-5" />
           </button>
