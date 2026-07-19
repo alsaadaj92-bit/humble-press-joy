@@ -26,6 +26,7 @@ const Index = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
