@@ -145,7 +145,6 @@ export function PhotoGrid({
             })}
           </div>
         </section>
-        </section>
         );
       })}
 
