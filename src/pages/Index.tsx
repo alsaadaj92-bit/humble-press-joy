@@ -207,6 +207,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <PwaStatus />
       <GallerySidebar
         active={activeSection}
         onSelect={setActiveSection}
