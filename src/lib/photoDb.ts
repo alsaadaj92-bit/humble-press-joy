@@ -125,6 +125,7 @@ class PhotoDatabase extends Dexie {
   kv!: Table<KV, string>;
   topicRules!: Table<TopicRule, string>;
   syncJobs!: Table<SyncJob, string>;
+  albums!: Table<Album, string>;
 
   constructor() {
     super("localgallery-pro");
@@ -145,6 +146,15 @@ class PhotoDatabase extends Dexie {
       kv: "key",
       topicRules: "id, priority, kind",
       syncJobs: "id, status, createdAt, updatedAt",
+    });
+    this.version(5).stores({
+      states: "id, favorite, archived, trashedAt, importedAt",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
     });
   }
 }
