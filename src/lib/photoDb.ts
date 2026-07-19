@@ -120,9 +120,18 @@ export interface Album {
   key?: string;             // "2024" or "2024-06"
   topicId?: number;         // Telegram forum topic binding
   coverAssetId?: string;
+  description?: string;
   createdAt: number;
   updatedAt: number;
 }
+
+export interface AlbumMember {
+  id: string;               // `${albumId}:${assetId}`
+  albumId: string;
+  assetId: string;
+  addedAt: number;
+}
+
 
 export interface EmbeddingRow {
   id: string;
