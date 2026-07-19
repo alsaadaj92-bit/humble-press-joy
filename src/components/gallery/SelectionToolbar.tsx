@@ -1,4 +1,4 @@
-import { Heart, Archive, Trash2, X, RotateCcw, CheckSquare } from "lucide-react";
+import { Heart, Archive, Trash2, X, RotateCcw, CheckSquare, FolderPlus } from "lucide-react";
 
 interface Props {
   count: number;
@@ -9,6 +9,7 @@ interface Props {
   onTrash: () => void;
   onRestore: () => void;
   onSelectAll: () => void;
+  onAddToAlbum?: () => void;
 }
 
 export function SelectionToolbar({
@@ -20,6 +21,7 @@ export function SelectionToolbar({
   onTrash,
   onRestore,
   onSelectAll,
+  onAddToAlbum,
 }: Props) {
   return (
     <div className="sticky top-0 z-30 -mx-4 mb-4 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
@@ -43,6 +45,9 @@ export function SelectionToolbar({
       <div className="mr-auto flex items-center gap-1">
         {section !== "trash" && (
           <>
+            {onAddToAlbum && (
+              <IconAction icon={FolderPlus} label="إضافة إلى ألبوم" onClick={onAddToAlbum} />
+            )}
             <IconAction icon={Heart} label="مفضلة (F)" onClick={onFavorite} />
             <IconAction icon={Archive} label="أرشيف (E)" onClick={onArchive} />
             <IconAction icon={Trash2} label="حذف (Del)" onClick={onTrash} destructive />
@@ -58,6 +63,7 @@ export function SelectionToolbar({
     </div>
   );
 }
+
 
 function IconAction({
   icon: Icon,
