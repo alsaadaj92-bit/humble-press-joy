@@ -157,7 +157,92 @@ export function SyncCenter() {
           </label>
         </div>
 
+        <div className="space-y-3 rounded-xl border border-border bg-secondary/30 p-4">
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span className="flex items-center gap-2 font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              ضغط الصور محلياً قبل الرفع
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.compressEnabled}
+              onChange={(e) => setSyncSettings({ compressEnabled: e.target.checked })}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            يعيد ترميز الصور في متصفحك (Canvas) — لا شيء يُرسل قبل الضغط. الفيديو
+            والملفات الأصغر من الحد الأدنى تُترك كما هي.
+          </p>
+          {settings.compressEnabled && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="text-xs">
+                <span className="mb-1 block text-foreground/80">الصيغة</span>
+                <select
+                  value={settings.compressFormat}
+                  onChange={(e) =>
+                    setSyncSettings({
+                      compressFormat: e.target.value as "webp" | "jpeg" | "original",
+                    })
+                  }
+                  className="input-field w-full"
+                >
+                  <option value="webp">WebP (موصى به)</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="original">إبقاء الصيغة الأصلية</option>
+                </select>
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block text-foreground/80">
+                  الجودة ({Math.round(settings.compressQuality * 100)}%)
+                </span>
+                <input
+                  type="range"
+                  min={30}
+                  max={100}
+                  value={Math.round(settings.compressQuality * 100)}
+                  onChange={(e) =>
+                    setSyncSettings({ compressQuality: Number(e.target.value) / 100 })
+                  }
+                  className="w-full accent-primary"
+                />
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block text-foreground/80">أقصى بُعد (px)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={8000}
+                  value={settings.compressMaxDim}
+                  onChange={(e) =>
+                    setSyncSettings({ compressMaxDim: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                  className="input-field w-full"
+                  dir="ltr"
+                />
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block text-foreground/80">تجاوز الملفات الأصغر من (KB)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100000}
+                  value={settings.compressSkipUnderKb}
+                  onChange={(e) =>
+                    setSyncSettings({
+                      compressSkipUnderKb: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className="input-field w-full"
+                  dir="ltr"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
+
           <button onClick={runNow} className="btn-primary">
             <Zap className="h-4 w-4" />
             <span>شغّل الآن</span>
