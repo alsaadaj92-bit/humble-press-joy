@@ -41,6 +41,8 @@ const Index = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLElement>(null);
@@ -283,8 +285,10 @@ const Index = () => {
               onTrash={doTrash}
               onRestore={doRestore}
               onSelectAll={selectAll}
+              onAddToAlbum={() => setPickerOpen(true)}
             />
           )}
+
 
           {sectionMeta[activeSection] && (
             <>
@@ -383,6 +387,13 @@ const Index = () => {
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
       />
+
+      <AlbumPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        assetIds={selectedIds}
+      />
+
 
       {searchOpen && (
         <div
