@@ -3,7 +3,9 @@
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { webcrypto } from "node:crypto";
+// @ts-expect-error - no bundled types
 import "fake-indexeddb/auto";
+
 
 // jsdom lacks crypto.subtle; graft Node's WebCrypto in.
 if (!globalThis.crypto?.subtle) {
