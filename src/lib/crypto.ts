@@ -43,6 +43,12 @@ export function b64decode(s: string): Uint8Array {
   return out;
 }
 
+// WebCrypto's BufferSource typing rejects Uint8Array<ArrayBufferLike> under strict TS.
+// Copy into a fresh ArrayBuffer so the type matches everywhere.
+function bs(u: Uint8Array): ArrayBuffer {
+  return u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer;
+}
+
 // --- key derivation --------------------------------------------------------
 async function deriveMasterKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
@@ -54,13 +60,14 @@ async function deriveMasterKey(passphrase: string, salt: Uint8Array): Promise<Cr
     ["deriveKey"],
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERS, hash: "SHA-256" },
+    { name: "PBKDF2", salt: bs(salt), iterations: PBKDF2_ITERS, hash: "SHA-256" },
     base,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"],
   );
 }
+
 
 // --- config (KV) -----------------------------------------------------------
 export async function getE2EEConfig(): Promise<StoredConfig | null> {
