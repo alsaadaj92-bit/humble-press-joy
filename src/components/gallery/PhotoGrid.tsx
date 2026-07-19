@@ -5,6 +5,7 @@ import type { PhotoState } from "@/lib/photoDb";
 import { formatDuration } from "@/lib/video";
 import { monthKey } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
+import { densityColClasses, type GridDensity } from "@/hooks/useGridDensity";
 import { EmptyState } from "./EmptyState";
 
 const providerLabel = (p: NonNullable<MockPhoto["provider"]>) =>
@@ -26,6 +27,8 @@ interface PhotoGridProps {
   section?: string;
   /** Optional current search query — shows a "no results" empty state. */
   query?: string;
+  /** Tile density (columns) — persisted via useGridDensity. */
+  density?: GridDensity;
 }
 
 export function PhotoGrid({
@@ -39,7 +42,9 @@ export function PhotoGrid({
   activeId,
   section,
   query,
+  density = "comfortable",
 }: PhotoGridProps) {
+  const colClasses = densityColClasses(density);
   const groups = useMemo(() => groupByDate(photos), [photos]);
   const indexOf = useMemo(() => {
     const map = new Map<string, number>();
