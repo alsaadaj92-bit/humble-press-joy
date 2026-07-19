@@ -1,4 +1,4 @@
-import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2 } from "lucide-react";
+import { Images, LibraryBig, Cloud, Settings, Search, Heart, Archive, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -14,8 +14,10 @@ const items = [
   { id: "archive", label: "الأرشيف", icon: Archive },
   { id: "trash", label: "سلة المحذوفات", icon: Trash2 },
   { id: "providers", label: "مزودو التخزين", icon: Cloud },
+  { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
   { id: "settings", label: "الإعدادات", icon: Settings },
 ];
+
 
 export function GallerySidebar({ active, onSelect, onSearchClick }: SidebarProps) {
   return (

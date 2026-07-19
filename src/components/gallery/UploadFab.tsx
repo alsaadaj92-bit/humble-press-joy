@@ -3,8 +3,8 @@ import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { extractExif, formatExposure, orientationLabel } from "@/lib/exif";
-import { uploadFileToActiveProvider } from "@/lib/providers";
 import { useProviders } from "@/hooks/useProviders";
+import { enqueueFiles, getSyncSettings } from "@/lib/syncEngine";
 import type { MediaAsset } from "@/lib/photoDb";
 
 interface Row {
@@ -12,7 +12,7 @@ interface Row {
   name: string;
   size: number;
   previewUrl: string;
-  status: "extracting" | "uploading" | "done" | "error" | "skipped";
+  status: "extracting" | "queued" | "skipped" | "error";
   message?: string;
   asset?: MediaAsset;
 }
@@ -41,66 +41,62 @@ export function UploadFab() {
     }));
     setRows(initial);
 
-    if (!hasProvider) {
-      toast.warning("لا يوجد مزود تخزين نشط", {
-        description: "الصور ستُقرأ محلياً لعرض EXIF فقط. اذهب لإعدادات المزودين لتفعيل الرفع.",
-      });
-    }
-
+    // Extract EXIF locally for preview (works with or without a provider).
     for (let i = 0; i < arr.length; i++) {
       const file = arr[i];
       try {
-        // extract EXIF (fast) so we can show something even without a provider
         const exif = await extractExif(file);
         setRows((prev) =>
           prev?.map((r, idx) =>
             idx === i
               ? {
                   ...r,
-                  status: hasProvider ? "uploading" : "skipped",
-                  asset: hasProvider
-                    ? r.asset
-                    : ({
-                        id: r.key,
-                        provider: "telegram",
-                        name: file.name,
-                        size: file.size,
-                        mime: file.type,
-                        date: exif.dateTaken ?? file.lastModified,
-                        createdAt: Date.now(),
-                        exif,
-                      } as MediaAsset),
+                  status: hasProvider ? "queued" : "skipped",
+                  asset: {
+                    id: r.key,
+                    provider: active ?? "telegram",
+                    name: file.name,
+                    size: file.size,
+                    mime: file.type,
+                    date: exif.dateTaken ?? file.lastModified,
+                    createdAt: Date.now(),
+                    exif,
+                  } as MediaAsset,
                 }
               : r,
           ) ?? null,
         );
-
-        if (hasProvider) {
-          const asset = await uploadFileToActiveProvider(file);
-          setRows((prev) =>
-            prev?.map((r, idx) =>
-              idx === i ? { ...r, status: "done", asset } : r,
-            ) ?? null,
-          );
-        }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
         setRows((prev) =>
           prev?.map((r, idx) =>
-            idx === i ? { ...r, status: "error", message } : r,
+            idx === i
+              ? { ...r, status: "error", message: err instanceof Error ? err.message : String(err) }
+              : r,
           ) ?? null,
         );
       }
     }
 
     if (hasProvider) {
-      toast.success("انتهى الرفع", {
-        description: `تم رفع ${arr.length} ملف عبر ${active}.`,
+      await enqueueFiles(arr);
+      const settings = await getSyncSettings();
+      const desc =
+        settings.mode === "manual"
+          ? "الوضع يدوي — افتح مركز المزامنة وشغّل الآن."
+          : settings.paused
+          ? "المزامنة موقوفة مؤقتاً — استأنفها من مركز المزامنة."
+          : `سيبدأ الرفع تلقائياً عبر ${labelOf(active!)}.`;
+      toast.success(`أُضيفت ${arr.length} صورة للطابور`, { description: desc });
+    } else {
+      toast.warning("لا يوجد مزود تخزين نشط", {
+        description: "الصور قُرئت محلياً لعرض EXIF فقط. فعّل مزوداً لبدء الرفع.",
       });
     }
   };
 
   const openPicker = () => inputRef.current?.click();
+
+
 
   return (
     <>
@@ -261,10 +257,9 @@ function RowItem({ row }: { row: Row }) {
 function StatusBadge({ status, message }: { status: Row["status"]; message?: string }) {
   const map: Record<Row["status"], { label: string; className: string; icon?: React.ReactNode }> = {
     extracting: { label: "قراءة EXIF...", className: "bg-secondary text-muted-foreground" },
-    uploading: { label: "جارٍ الرفع...", className: "bg-primary/15 text-primary" },
-    done: {
-      label: "تم الرفع",
-      className: "bg-emerald-500/15 text-emerald-400",
+    queued: {
+      label: "في طابور المزامنة",
+      className: "bg-primary/15 text-primary",
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     skipped: {
@@ -277,6 +272,7 @@ function StatusBadge({ status, message }: { status: Row["status"]; message?: str
       icon: <AlertCircle className="h-3 w-3" />,
     },
   };
+
   const s = map[status];
   return (
     <span

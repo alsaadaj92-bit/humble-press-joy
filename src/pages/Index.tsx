@@ -7,11 +7,14 @@ import { Lightbox } from "@/components/gallery/Lightbox";
 import { UploadFab } from "@/components/gallery/UploadFab";
 import { SelectionToolbar } from "@/components/gallery/SelectionToolbar";
 import { ProvidersPanel } from "@/components/gallery/ProvidersPanel";
+import { SyncCenter } from "@/components/gallery/SyncCenter";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
 import { useProviders } from "@/hooks/useProviders";
 import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useResolvedAssets } from "@/hooks/useResolvedAssets";
+import { useSyncLoop } from "@/hooks/useSyncEngine";
+
 
 const Index = () => {
   const mockPhotos = useMemo(() => generateMockPhotos(64), []);
@@ -27,6 +30,8 @@ const Index = () => {
   const { providers } = useProviders();
   const assets = useMediaAssets();
   const uploadedPhotos = useResolvedAssets(assets, providers);
+  useSyncLoop();
+
 
   // Uploaded assets first (newest), then mocks — sorted by date desc.
   const allPhotos = useMemo<MockPhoto[]>(() => {
@@ -243,6 +248,8 @@ const Index = () => {
             />
           )}
           {activeSection === "providers" && <ProvidersPanel />}
+          {activeSection === "sync" && <SyncCenter />}
+
           {activeSection === "settings" && (
             <PlaceholderSection
               title="الإعدادات"
