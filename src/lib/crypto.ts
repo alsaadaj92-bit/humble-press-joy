@@ -189,7 +189,7 @@ export async function encryptFile(file: File): Promise<{ blob: Blob; meta: Encry
   new DataView(header.buffer).setUint16(30, wrappedKey.length, true);
   header.set(wrappedKey, 32);
 
-  const blob = new Blob([header, ciphertext], { type: "application/octet-stream" });
+  const blob = new Blob([bs(header), bs(ciphertext)], { type: "application/octet-stream" });
   return {
     blob,
     meta: {
