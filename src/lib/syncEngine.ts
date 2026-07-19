@@ -176,7 +176,9 @@ async function processOneJob(job: SyncJob): Promise<void> {
       createdAt: Date.now(),
       exif,
       telegram: { fileId: res.fileId, messageId: res.messageId },
+      encryption,
     };
+
   } else if (job.provider === "localServer") {
     if (!cfg.baseUrl) throw new Error("عنوان الخادم المحلي غير محدد");
     const res = await localServerUpload(cfg.baseUrl, file);
