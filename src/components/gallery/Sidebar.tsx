@@ -107,6 +107,7 @@ const GROUPS: NavGroup[] = [
       { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
       { id: "partner", label: "الشريك", icon: Users, stub: true },
       { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true },
+      { id: "permissions", label: "الأذونات (تطبيق أصلي)", icon: Lock },
       { id: "settings", label: "الإعدادات", icon: Settings },
     ],
   },

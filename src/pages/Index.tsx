@@ -529,6 +529,16 @@ const Index = () => {
               <SharingPanel />
             </>
           )}
+          {activeSection === "permissions" && (
+            <>
+              <SectionHero
+                title="أذونات التطبيق الأصلي"
+                subtitle="امنح الأذونات مرة واحدة لتفعيل الكاميرا والإشعارات والموقع داخل APK"
+              />
+              <PermissionsPanel />
+            </>
+          )}
+
 
           {STUB_SECTIONS[activeSection] && (
             <PlaceholderSection
