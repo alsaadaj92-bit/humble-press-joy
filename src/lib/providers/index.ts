@@ -90,13 +90,22 @@ export function resolveAssetUrl(
       let path = asset.telegram?.filePath;
       if (!path) {
         path = await telegramGetFilePath(cfg.botToken, asset.telegram!.fileId);
-        // cache the resolved path back on the record for next session
         await photoDb.assets.update(asset.id, {
           telegram: { ...asset.telegram!, filePath: path },
         });
       }
-      return telegramFileUrl(cfg.botToken, path);
+      const directUrl = telegramFileUrl(cfg.botToken, path);
+      if (!asset.encryption) return directUrl;
+
+      // E2EE: fetch ciphertext and decrypt to an in-memory blob URL.
+      if (!isE2EEUnlocked()) {
+        throw new Error("هذا الملف مشفّر — افتح القفل من الإعدادات لعرضه");
+      }
+      const cipher = await fetch(directUrl).then((r) => r.blob());
+      const plain = await decryptBlob(cipher, asset.encryption);
+      return URL.createObjectURL(plain);
     }
+
     throw new Error("مزود غير مدعوم");
   })();
 
