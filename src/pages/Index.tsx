@@ -175,20 +175,30 @@ const Index = () => {
   };
   const doArchive = () => {
     if (!selectedIds.length) return;
-    setArchived(selectedIds, activeSection !== "archive");
-    toast.success(activeSection === "archive" ? "أُخرجت من الأرشيف" : "أُرشفت");
+    const ids = [...selectedIds];
+    const wasArchive = activeSection === "archive";
+    setArchived(ids, !wasArchive);
+    toast.success(wasArchive ? "أُخرجت من الأرشيف" : "أُرشفت", {
+      action: { label: "تراجع", onClick: () => setArchived(ids, wasArchive) },
+    });
     clearSelection();
   };
   const doTrash = () => {
     if (!selectedIds.length) return;
-    trash(selectedIds);
-    toast.success("نُقلت لسلة المحذوفات");
+    const ids = [...selectedIds];
+    trash(ids);
+    toast.success("نُقلت لسلة المحذوفات", {
+      action: { label: "تراجع", onClick: () => restore(ids) },
+    });
     clearSelection();
   };
   const doRestore = () => {
     if (!selectedIds.length) return;
-    restore(selectedIds);
-    toast.success("استُعيدت الصور");
+    const ids = [...selectedIds];
+    restore(ids);
+    toast.success("استُعيدت الصور", {
+      action: { label: "تراجع", onClick: () => trash(ids) },
+    });
     clearSelection();
   };
   const doLock = async () => {
