@@ -80,7 +80,7 @@ export function resolveAssetUrl(
   if (cached) return cached;
 
   const p = (async () => {
-    if (asset.provider === "local" || asset.provider === "localServer") {
+    if (asset.provider === "localServer") {
       return asset.local!.url;
     }
     if (asset.provider === "telegram") {

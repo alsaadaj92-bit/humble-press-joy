@@ -19,7 +19,7 @@ type TgResp<T> = TgOk<T> | TgErr;
 async function tg<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init);
   const j = (await r.json()) as TgResp<T>;
-  if (!j.ok) throw new Error(j.description || `Telegram error ${r.status}`);
+  if (!j.ok) throw new Error((j as TgErr).description || `Telegram error ${r.status}`);
   return j.result;
 }
 
