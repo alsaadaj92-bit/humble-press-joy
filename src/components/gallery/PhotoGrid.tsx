@@ -19,6 +19,12 @@ interface PhotoGridProps {
   onFavoriteToggle: (id: string) => void;
   /** Bulk selection replacement (for drag-to-select). */
   onSelectionChange?: (ids: string[]) => void;
+  /** Currently open photo id — receives the shared view-transition name. */
+  activeId?: string | null;
+  /** Optional section id, used to render a domain-specific empty state. */
+  section?: string;
+  /** Optional current search query — shows a "no results" empty state. */
+  query?: string;
 }
 
 export function PhotoGrid({
@@ -29,6 +35,9 @@ export function PhotoGrid({
   onToggleSelect,
   onFavoriteToggle,
   onSelectionChange,
+  activeId,
+  section,
+  query,
 }: PhotoGridProps) {
   const groups = useMemo(() => groupByDate(photos), [photos]);
   const indexOf = useMemo(() => {
