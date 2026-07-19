@@ -1,9 +1,10 @@
-import { Images, LibraryBig, RefreshCw, Settings, Sparkles } from "lucide-react";
+import { Images, LibraryBig, RefreshCw, Settings, Sparkles, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { id: "photos", label: "الصور", icon: Images },
   { id: "memories", label: "الذكريات", icon: Sparkles },
+  { id: "places", label: "الأماكن", icon: MapPin },
   { id: "albums", label: "الألبومات", icon: LibraryBig },
   { id: "sync", label: "المزامنة", icon: RefreshCw },
   { id: "settings", label: "إعدادات", icon: Settings },
