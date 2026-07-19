@@ -85,6 +85,14 @@ const Index = () => {
     return list;
   }, [allPhotos, query, parsedQuery, states, activeSection]);
 
+  const timelineBuckets = useMemo(() => buildTimelineBuckets(visible), [visible]);
+  const showScrubber =
+    (activeSection === "photos" ||
+      activeSection === "favorites" ||
+      activeSection === "archive" ||
+      activeSection === "trash") &&
+    timelineBuckets.length >= 2;
+
   useEffect(() => {
     setSelection(new Set());
   }, [activeSection]);
