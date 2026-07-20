@@ -39,11 +39,10 @@ const TOOLS: {
   { section: "eraser", title: "الممحاة السحرية", desc: "إزالة عناصر غير مرغوبة محلياً.", icon: Wand2, tag: "AI محلي" },
   { section: "scanner", title: "ماسح المستندات", desc: "تصحيح المنظور + حفظ PDF.", icon: ScanLine },
   { section: "creations", title: "أفلام ومجمّعات", desc: "افلام تلقائية من ذكرياتك.", icon: Play },
-  { section: "livealbums", title: "الألبومات الحيّة", desc: "قواعد ذكية تضيف الصور تلقائياً.", icon: Route },
+  { section: "live-albums", title: "الألبومات الحيّة", desc: "قواعد ذكية تضيف الصور تلقائياً.", icon: Route },
   { section: "backup", title: "نسخ احتياطي كامل", desc: "تصدير/استعادة كل قاعدة البيانات.", icon: Save },
   { section: "places", title: "خريطة الأماكن", desc: "صورك موزّعة على خارطة العالم.", icon: MapPin },
-  { section: "topics", title: "قواعد مواضيع تيليجرام", desc: "توجيه تلقائي لكل صورة لموضوع صحيح.", icon: Send },
-  { section: "download", title: "OTA — تحديث التطبيق", desc: "فحص وتنزيل أحدث APK من GitHub.", icon: Download },
+  { section: "settings", title: "OTA — تحديث التطبيق", desc: "فحص وتنزيل أحدث APK من GitHub.", icon: Download },
 ];
 
 /**
