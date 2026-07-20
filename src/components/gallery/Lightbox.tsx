@@ -21,9 +21,31 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
   const [showInfo, setShowInfo] = useState(false);
   const [editing, setEditing] = useState(false);
   const [exif, setExif] = useState<ExifData | null>(null);
+  const [showChrome, setShowChrome] = useState(true);
+  const hideTimerRef = useRef<number | null>(null);
 
   const open = index !== null;
   const photo = open ? photos[index!] : null;
+
+  const bumpChrome = useCallback(() => {
+    setShowChrome(true);
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => setShowChrome(false), 2500);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    bumpChrome();
+    const onMove = () => bumpChrome();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchstart", onMove);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchstart", onMove);
+      if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    };
+  }, [open, bumpChrome, photo]);
+
 
   useEffect(() => {
     if (!photo) {
