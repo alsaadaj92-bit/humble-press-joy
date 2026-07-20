@@ -51,6 +51,9 @@ export interface MediaAsset {
   duration?: number;
   /** Data URL poster frame for videos (kept small — under ~100KB). */
   posterDataUrl?: string;
+  /** Locally-imported original blob — used to display in the gallery even when
+   *  no cloud/sync provider is configured. Persisted in IndexedDB. */
+  blob?: Blob;
   /** Present when the stored file is E2EE ciphertext. */
   encryption?: {
     alg: "AES-GCM-256";

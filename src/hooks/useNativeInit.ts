@@ -60,14 +60,15 @@ export function useNativeInit() {
         ).catch(() => undefined);
       }
 
-      // First-launch auto-scan of the device gallery.
+      // First-launch auto-scan of the device gallery. Only mark "done" when
+      // we actually imported something — otherwise retry on the next launch.
       try {
         if (canScanDeviceGallery()) {
           const done = await prefGet("lp:firstScanDone");
           if (!done) {
             const n = await scanDeviceGallery();
-            await prefSet("lp:firstScanDone", "1");
             if (n > 0) {
+              await prefSet("lp:firstScanDone", "1");
               void notify("تم استيراد الصور", `أُدرجت ${n} عنصراً من المعرض.`).catch(
                 () => undefined,
               );
