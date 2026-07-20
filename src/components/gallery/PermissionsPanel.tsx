@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Camera, MapPin, Shield, RefreshCw, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Bell, Camera, MapPin, Shield, RefreshCw, CheckCircle2, XCircle, HelpCircle, Images, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   checkCameraPermission,
@@ -11,6 +11,7 @@ import {
   requestLocationPermission,
   requestNotifPermission,
 } from "@/lib/native";
+import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
 
 type Status = "granted" | "denied" | "prompt" | "unknown";
 
