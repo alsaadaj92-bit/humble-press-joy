@@ -3,6 +3,7 @@ import { Sparkles, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { buildMemories, type MemoryStory } from "@/lib/memories";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import { picsumThumb, picsumUrl } from "@/lib/mockPhotos";
+import { cn } from "@/lib/utils";
 
 function coverSrc(p: MockPhoto, w = 800, h = 800) {
   return p.thumbSrc || p.fullSrc || picsumUrl(p.seed, w, h);
