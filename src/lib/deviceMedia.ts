@@ -70,12 +70,12 @@ export async function scanDeviceGallery(
       createdAt: Date.now(),
       kind: isVideo ? "video" : "image",
       posterDataUrl: `data:image/jpeg;base64,${m.data}`,
+      deviceIdentifier: m.identifier,
       ...(isVideo ? { duration: m.duration } : {}),
       ...(m.location?.latitude && m.location?.longitude
         ? { exif: { gps: { lat: m.location.latitude, lon: m.location.longitude }, dateTaken } }
         : {}),
-      deviceIdentifier: m.identifier,
-    } as MediaAsset;
+    };
 
     await photoDb.assets.put(asset);
     inserted++;
