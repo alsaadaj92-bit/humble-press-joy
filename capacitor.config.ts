@@ -27,6 +27,11 @@ const config: CapacitorConfig = {
     Camera: {
       permissions: ['camera', 'photos'],
     },
+    Media: {
+      // Enables full gallery scan on Android (like Google Photos).
+      // Requires READ_MEDIA_IMAGES / READ_MEDIA_VIDEOS in AndroidManifest.xml.
+      androidGalleryMode: true,
+    },
   },
 };
 

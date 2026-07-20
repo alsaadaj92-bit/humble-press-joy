@@ -15,7 +15,7 @@ export interface PhotoState {
   importedAt?: number;
 }
 
-export type ProviderKind = "telegram" | "localServer" | "fileSystem";
+export type ProviderKind = "telegram" | "localServer" | "fileSystem" | "device";
 
 export interface ProviderConfig {
   kind: ProviderKind;
@@ -43,6 +43,8 @@ export interface MediaAsset {
   telegram?: { fileId: string; messageId?: number; filePath?: string };
   local?: { url: string; path: string };
   fs?: { path: string };
+  /** Native device gallery — identifier from @capacitor-community/media. */
+  deviceIdentifier?: string;
   /** Media kind — defaults to image when omitted. */
   kind?: "image" | "video";
   /** Video duration in seconds. */

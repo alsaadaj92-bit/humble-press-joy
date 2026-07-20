@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Camera, MapPin, Shield, RefreshCw, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Bell, Camera, MapPin, Shield, RefreshCw, CheckCircle2, XCircle, HelpCircle, Images, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   checkCameraPermission,
@@ -11,6 +11,7 @@ import {
   requestLocationPermission,
   requestNotifPermission,
 } from "@/lib/native";
+import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
 
 type Status = "granted" | "denied" | "prompt" | "unknown";
 
@@ -146,6 +147,8 @@ export function PermissionsPanel() {
         })}
       </div>
 
+      {canScanDeviceGallery() && <DeviceGalleryScanCard />}
+
       <div className="rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground">
         <div className="font-semibold text-foreground">حول العمل في الخلفية</div>
         <ul className="mt-2 list-disc space-y-1 pr-4">
@@ -174,3 +177,58 @@ function StatusBadge({ status }: { status: Status }) {
     </span>
   );
 }
+
+function DeviceGalleryScanCard() {
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [imported, setImported] = useState<number | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    setImported(null);
+    setProgress({ done: 0, total: 0 });
+    try {
+      const n = await scanDeviceGallery((done, total) => setProgress({ done, total }));
+      setImported(n);
+      toast.success(`تم استيراد ${n} عنصر جديد من معرض الهاتف`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/20">
+          <Images className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">استيراد كل صور المعرض</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            يفحص كل الصور والفيديوهات الموجودة في معرض هاتفك ويعرضها هنا فوراً — دون رفع أي شيء.
+            يمكنك بعدها اختيار ما تريد مزامنته لاحقاً.
+          </p>
+          <button
+            onClick={run}
+            disabled={busy}
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Images className="h-4 w-4" />}
+            {busy ? "جارٍ الفحص..." : "افحص المعرض الآن"}
+          </button>
+          {progress && busy && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {progress.done} / {progress.total || "…"}
+            </p>
+          )}
+          {imported !== null && !busy && (
+            <p className="mt-2 text-xs text-emerald-500">تمت الإضافة: {imported} عنصر جديد.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
