@@ -14,6 +14,8 @@ import {
   requestNotifPermission,
 } from "@/lib/native";
 import { runSyncCycle } from "@/lib/syncEngine";
+import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
+import { prefGet, prefSet } from "@/lib/native";
 
 // Boots native-only integrations: status bar, splash, resume/network triggers.
 // Safe on the web — every call short-circuits when Capacitor isn't present.
@@ -54,8 +56,26 @@ export function useNativeInit() {
       if (camOk) {
         void notify(
           "Localphotos Pro جاهز",
-          "اضغط زر + ثم «من معرض الهاتف» لاختيار الصور التي تريد إدارتها.",
+          "جاري تحميل صور معرض هاتفك — قد تستغرق العملية لحظات.",
         ).catch(() => undefined);
+      }
+
+      // First-launch auto-scan of the device gallery.
+      try {
+        if (canScanDeviceGallery()) {
+          const done = await prefGet("lp:firstScanDone");
+          if (!done) {
+            const n = await scanDeviceGallery();
+            await prefSet("lp:firstScanDone", "1");
+            if (n > 0) {
+              void notify("تم استيراد الصور", `أُدرجت ${n} عنصراً من المعرض.`).catch(
+                () => undefined,
+              );
+            }
+          }
+        }
+      } catch {
+        /* ignore — user can re-run from Permissions panel */
       }
     })();
 
