@@ -225,7 +225,7 @@ export function UploadFab() {
         style={{ pointerEvents: "none" }}
       />
 
-      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:left-6" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
         {menuOpen && (
           <>
             {isNative() && (

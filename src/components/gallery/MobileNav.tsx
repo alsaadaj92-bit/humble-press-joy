@@ -1,14 +1,14 @@
-import { Images, LibraryBig, Search, Sparkles, Share2 } from "lucide-react";
+import { Images, LibraryBig, Search, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Google Photos-style 5-tab bottom nav.
+// Google Photos-style 4-tab bottom nav (Photos / Search / Sharing / Library).
 const items = [
   { id: "photos", label: "الصور", icon: Images },
-  { id: "memories", label: "الذكريات", icon: Sparkles },
   { id: "smart", label: "بحث", icon: Search },
   { id: "sharing", label: "مشاركة", icon: Share2 },
   { id: "library", label: "المكتبة", icon: LibraryBig },
 ];
+
 
 export function MobileNav({
   active,
