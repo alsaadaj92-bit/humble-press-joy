@@ -64,10 +64,11 @@ export function PhotoGrid({
         const mKey = first ? monthKey(first.date) : undefined;
         return (
         <section key={group.label} data-month={mKey}>
-          <h2 className="sticky top-0 z-10 -mx-1 mb-2 bg-background/85 px-2 py-1 text-[13px] font-medium text-foreground/80 backdrop-blur">
+          <h2 className="sticky top-0 z-10 -mx-1 mb-1 bg-background/95 px-2 py-2 text-[13px] font-medium text-foreground/90 shadow-sm shadow-black/40 backdrop-blur">
             {group.label}
           </h2>
-          <div className={cn("masonry gap-1 sm:gap-1.5", colClasses)}>
+          <div className={cn("masonry gap-0.5 sm:gap-1", colClasses)}>
+
             {group.items.map((photo) => {
               const idx = indexOf.get(photo.id)!;
               const state = states.get(photo.id);

@@ -2,57 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LocalGallery Pro — Dark, premium gallery design system.
+/* Localphotos Pro — Pure-black gallery design system (Google Photos parity).
    All colors are HSL semantic tokens. */
 
 @layer base {
   :root {
-    /* Dark by default — this app ships in dark mode */
-    --background: 220 8% 11%;           /* #1b1c1e */
+    /* Pure black gallery — matches Google Photos */
+    --background: 0 0% 0%;              /* #000 */
     --foreground: 210 15% 92%;          /* #e8eaed */
 
-    --card: 220 7% 14%;                 /* #212327 */
+    --card: 0 0% 8%;                    /* #141414 */
     --card-foreground: 210 15% 92%;
 
-    --popover: 220 7% 14%;
+    --popover: 0 0% 10%;
     --popover-foreground: 210 15% 92%;
 
     --primary: 217 89% 76%;             /* #8ab4f8 — Google-blue accent */
     --primary-foreground: 220 25% 12%;
 
-    --secondary: 220 6% 18%;            /* #292b2f */
+    --secondary: 0 0% 12%;              /* #1f1f1f */
     --secondary-foreground: 210 15% 92%;
 
-    --muted: 220 6% 20%;
+    --muted: 0 0% 14%;
     --muted-foreground: 220 6% 65%;     /* #9aa0a6 */
 
-    --accent: 220 6% 22%;
+    --accent: 0 0% 16%;
     --accent-foreground: 210 15% 95%;
 
     --destructive: 4 90% 62%;
     --destructive-foreground: 210 15% 98%;
 
-    --border: 220 6% 22%;
-    --input: 220 6% 22%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
     --ring: 217 89% 76%;
 
     --radius: 0.75rem;
 
     /* Sidebar tokens */
-    --sidebar-background: 220 8% 9%;
+    --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 210 15% 88%;
     --sidebar-primary: 217 89% 76%;
     --sidebar-primary-foreground: 220 25% 12%;
-    --sidebar-accent: 220 7% 16%;
+    --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 210 15% 95%;
-    --sidebar-border: 220 6% 18%;
+    --sidebar-border: 0 0% 12%;
     --sidebar-ring: 217 89% 76%;
 
     /* Gallery-specific tokens */
-    --surface-elevated: 220 7% 16%;
-    --overlay: 220 20% 4%;
+    --surface-elevated: 0 0% 12%;
+    --overlay: 0 0% 0%;
     --gradient-hero: linear-gradient(135deg, hsl(217 89% 76% / 0.15), hsl(280 70% 70% / 0.05));
-    --shadow-lightbox: 0 30px 80px -20px hsl(220 30% 2% / 0.7);
+    --shadow-lightbox: 0 30px 80px -20px hsl(0 0% 0% / 0.9);
     --shadow-fab: 0 8px 24px -4px hsl(217 89% 40% / 0.5);
   }
 }
@@ -66,6 +66,9 @@
   body,
   #root {
     height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   body {
@@ -90,7 +93,7 @@
 @layer utilities {
   /* CSS-columns masonry */
   .masonry {
-    column-gap: 0.5rem;
+    column-gap: 0.25rem;
   }
   .masonry-col-2 { column-count: 2; }
   .masonry-col-3 { column-count: 3; }
@@ -99,11 +102,13 @@
   .masonry-col-6 { column-count: 6; }
   .masonry-col-7 { column-count: 7; }
   .masonry-col-8 { column-count: 8; }
+  .masonry-col-9 { column-count: 9; }
   .masonry-col-10 { column-count: 10; }
+  .masonry-col-12 { column-count: 12; }
 
   .masonry-item {
     break-inside: avoid;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     display: block;
   }
 
@@ -130,4 +135,3 @@
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
-
