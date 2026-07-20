@@ -8,92 +8,81 @@ import {
   checkLocationPermission,
   checkNotifPermission,
   isNative,
-  notify,
   requestCameraPermission,
   requestLocationPermission,
   requestNotifPermission,
 } from "@/lib/native";
 import { runSyncCycle } from "@/lib/syncEngine";
 import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
-import { prefGet, prefSet } from "@/lib/native";
 
-// Boots native-only integrations: status bar, splash, resume/network triggers.
-// Safe on the web — every call short-circuits when Capacitor isn't present.
-// Permission prompts keep re-firing on every launch until the user grants them,
-// so a missed dialog on first launch is fixed the next time the app opens.
+/**
+ * Native init:
+ * - Edge-to-edge immersive (StatusBar overlays WebView, transparent).
+ * - Splash hide.
+ * - Silent permission checks (the PermissionsWizard handles the actual asks).
+ * - Automatic device-gallery scans on launch and on every app resume.
+ * - Sync triggers on network change / resume.
+ */
 export function useNativeInit() {
   useEffect(() => {
     if (!isNative()) return;
 
-    void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-    void StatusBar.setBackgroundColor({ color: "#0b0b0b" }).catch(() => undefined);
-    void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => undefined);
-
     void (async () => {
-      // Wait a beat so the WebView is fully attached before the OS dialog opens
-      // (some OEMs swallow prompts fired too early after launch).
-      await new Promise((r) => setTimeout(r, 600));
-
-      const askIfNeeded = async (
-        check: () => Promise<"granted" | "denied" | "prompt" | "unknown">,
-        request: () => Promise<boolean>,
-      ) => {
-        try {
-          const s = await check();
-          if (s === "granted") return true;
-          // Re-request unless the user explicitly denied and the OS won't show
-          // the dialog again — the request call is a no-op in that case, safe.
-          return await request();
-        } catch {
-          return false;
-        }
-      };
-
-      const camOk = await askIfNeeded(checkCameraPermission, requestCameraPermission);
-      await askIfNeeded(checkNotifPermission, requestNotifPermission);
-      await askIfNeeded(checkLocationPermission, requestLocationPermission);
-
-      if (camOk) {
-        void notify(
-          "Localphotos Pro جاهز",
-          "جاري تحميل صور معرض هاتفك — قد تستغرق العملية لحظات.",
-        ).catch(() => undefined);
-      }
-
-      // First-launch auto-scan of the device gallery. Only mark "done" when
-      // we actually imported something — otherwise retry on the next launch.
       try {
-        if (canScanDeviceGallery()) {
-          const done = await prefGet("lp:firstScanDone");
-          if (!done) {
-            const n = await scanDeviceGallery();
-            if (n > 0) {
-              await prefSet("lp:firstScanDone", "1");
-              void notify("تم استيراد الصور", `أُدرجت ${n} عنصراً من المعرض.`).catch(
-                () => undefined,
-              );
-            }
-          }
-        }
-      } catch {
-        /* ignore — user can re-run from Permissions panel */
-      }
+        // Immersive: WebView paints behind the status bar & nav bar.
+        await StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+        await StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+        await StatusBar.setBackgroundColor({ color: "#00000000" }).catch(() => undefined);
+      } catch { /* ignore */ }
+      void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => undefined);
     })();
+
+    // Kick off a background scan whenever the app opens or resumes — this
+    // ensures newly-added photos in the phone gallery appear here without a
+    // manual action, just like Google Photos.
+    const runScan = () => {
+      void (async () => {
+        try {
+          if (!canScanDeviceGallery()) return;
+          const cam = await checkCameraPermission();
+          if (cam !== "granted") return; // wizard hasn't finished yet
+          await scanDeviceGallery();
+        } catch { /* ignore */ }
+      })();
+    };
+
+    // First tick — wait a beat so wizard/permissions can settle.
+    const t = window.setTimeout(runScan, 1200);
 
     const runSync = () => {
       void runSyncCycle().catch(() => undefined);
     };
 
     const appSub = App.addListener("appStateChange", (s) => {
-      if (s.isActive) runSync();
+      if (s.isActive) {
+        runSync();
+        runScan();
+      }
     });
     const netSub = Network.addListener("networkStatusChange", (s) => {
       if (s.connected) runSync();
     });
 
+    // Silently re-check permissions on resume (no dialog if already answered).
+    const permSub = App.addListener("appStateChange", async (s) => {
+      if (!s.isActive) return;
+      try {
+        if ((await checkCameraPermission()) === "prompt") await requestCameraPermission();
+        if ((await checkNotifPermission()) === "prompt") await requestNotifPermission();
+        if ((await checkLocationPermission()) === "prompt") await requestLocationPermission();
+      } catch { /* ignore */ }
+    });
+
     return () => {
+      window.clearTimeout(t);
       void appSub.then((h) => h.remove()).catch(() => undefined);
       void netSub.then((h) => h.remove()).catch(() => undefined);
+      void permSub.then((h) => h.remove()).catch(() => undefined);
     };
   }, []);
 }

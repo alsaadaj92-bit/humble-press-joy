@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { buildMemories, type MemoryStory } from "@/lib/memories";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import { picsumThumb, picsumUrl } from "@/lib/mockPhotos";
+import { cn } from "@/lib/utils";
 
 function coverSrc(p: MockPhoto, w = 800, h = 800) {
   return p.thumbSrc || p.fullSrc || picsumUrl(p.seed, w, h);
@@ -17,7 +18,24 @@ function fullSrc(p: MockPhoto) {
 export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
   const stories = useMemo(() => buildMemories(photos), [photos]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [featured, setFeatured] = useState(0);
+  const railRef = useRef<HTMLDivElement>(null);
   const openStory = stories.find((s) => s.id === openId) ?? null;
+
+  // Auto-rotate the featured story every 5s (Google Photos-style hero rail).
+  useEffect(() => {
+    if (!stories.length || openId) return;
+    const t = window.setInterval(() => {
+      setFeatured((v) => (v + 1) % stories.length);
+    }, 5000);
+    return () => window.clearInterval(t);
+  }, [stories.length, openId]);
+
+  // Scroll the rail so the featured card is in view.
+  useEffect(() => {
+    const el = railRef.current?.querySelector<HTMLElement>(`[data-story-idx="${featured}"]`);
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [featured]);
 
   if (!stories.length) {
     return (
@@ -39,17 +57,26 @@ export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
         <h2 className="text-lg font-semibold">ذكرياتك</h2>
       </div>
 
-      <div className="scrollbar-thin -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
-        {stories.map((s) => (
+      <div ref={railRef} className="scrollbar-thin -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
+        {stories.map((s, idx) => (
           <button
             key={s.id}
+            data-story-idx={idx}
             onClick={() => setOpenId(s.id)}
-            className="group relative aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl border border-border ring-primary/40 transition hover:ring-2 md:w-48"
+            className={cn(
+              "group relative aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl border transition md:w-48",
+              idx === featured
+                ? "border-primary ring-2 ring-primary/60 scale-[1.03]"
+                : "border-border hover:ring-2 hover:ring-primary/40",
+            )}
           >
             <img
               src={coverSrc(s.cover, 400, 700)}
               alt={s.title}
-              className="h-full w-full object-cover transition group-hover:scale-105"
+              className={cn(
+                "h-full w-full object-cover transition-transform duration-700",
+                idx === featured ? "scale-110" : "group-hover:scale-105",
+              )}
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -60,6 +87,23 @@ export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
           </button>
         ))}
       </div>
+
+      {/* Progress dots */}
+      {stories.length > 1 && (
+        <div className="mt-1 flex justify-center gap-1">
+          {stories.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setFeatured(idx)}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                idx === featured ? "w-6 bg-primary" : "w-1.5 bg-muted",
+              )}
+              aria-label={`ذكرى ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Grid of story details */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">

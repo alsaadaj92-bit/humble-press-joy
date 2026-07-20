@@ -270,7 +270,7 @@ export function UploadFab() {
         style={{ pointerEvents: "none" }}
       />
 
-      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:hidden" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:hidden" style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 4px)" }}>
         {menuOpen && (
           <>
             {isNative() && (
@@ -304,6 +304,7 @@ export function UploadFab() {
           </>
         )}
         <button
+          id="lp-fab-toggle"
           onClick={() => setMenuOpen((v) => !v)}
           className="flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95"
           style={{ boxShadow: "var(--shadow-fab)" }}

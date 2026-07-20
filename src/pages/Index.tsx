@@ -40,7 +40,9 @@ import { SettingsPage } from "@/components/gallery/SettingsPage";
 import { QuickChips } from "@/components/gallery/QuickChips";
 import { LibraryHub } from "@/components/gallery/LibraryHub";
 import { DensityToggle } from "@/components/gallery/DensityToggle";
+import { PermissionsWizard } from "@/components/gallery/PermissionsWizard";
 import { useGridDensity } from "@/hooks/useGridDensity";
+import { useBackButton } from "@/hooks/useBackButton";
 import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -261,6 +263,26 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, visible, lightboxIndex, activeSection]);
 
+  // Android hardware back — close overlays in order, then leave.
+  useBackButton(() => {
+    if (searchOpen) { setSearchOpen(false); return true; }
+    if (pickerOpen) { setPickerOpen(false); return true; }
+    if (drawerOpen) { setDrawerOpen(false); return true; }
+    if (lightboxIndex !== null) { setLightboxIndex(null); return true; }
+    if (selection.size) { clearSelection(); return true; }
+    if (activeSection !== "photos") { setActiveSection("photos"); return true; }
+    return false; // let it exit the app
+  });
+
+  // "Create" tab in mobile nav opens the upload menu / file picker.
+  const handleTabSelect = useCallback((id: string) => {
+    if (id === "create") {
+      document.getElementById("lp-fab-toggle")?.click();
+      return;
+    }
+    setActiveSection(id);
+  }, []);
+
   const sectionMeta: Record<string, { title: string; sub: (n: number) => string }> = {
     photos: {
       title: "الصور",
@@ -274,6 +296,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <PermissionsWizard />
       <PwaStatus />
       <GallerySidebar
         active={activeSection}
@@ -298,11 +321,12 @@ const Index = () => {
         </SheetContent>
       </Sheet>
 
-      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-24 pt-safe md:pb-0">
         <UpdateBanner />
         {showScrubber && (
           <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
         )}
+
 
         <TopBar
           query={query}
@@ -558,7 +582,7 @@ const Index = () => {
       </main>
 
       <UploadFab />
-      <MobileNav active={activeSection} onSelect={setActiveSection} />
+      <MobileNav active={activeSection} onSelect={handleTabSelect} />
 
       <Lightbox
         photos={visible}

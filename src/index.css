@@ -69,6 +69,8 @@
     width: 100%;
     margin: 0;
     padding: 0;
+    background: #000;
+    overscroll-behavior: none;
   }
 
   body {
@@ -76,6 +78,14 @@
     font-feature-settings: "cv11", "ss01";
     font-family: "Cairo", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
+}
+
+@layer utilities {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-x { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .mt-safe { margin-top: env(safe-area-inset-top); }
+  .h-safe-top { height: env(safe-area-inset-top); }
 }
 
 @layer components {

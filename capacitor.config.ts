@@ -18,22 +18,26 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 800,
+      launchShowDuration: 600,
       launchAutoHide: true,
-      backgroundColor: '#0b0b0b',
+      backgroundColor: '#000000',
       androidSplashResourceName: 'splash',
       showSpinner: false,
     },
+    StatusBar: {
+      // Immersive edge-to-edge — WebView draws behind status bar.
+      overlaysWebView: true,
+      style: 'DARK',
+      backgroundColor: '#00000000',
+    },
     LocalNotifications: {
       smallIcon: 'ic_stat_icon_config_sample',
-      iconColor: '#4285F4',
+      iconColor: '#8ab4f8',
     },
     Camera: {
       permissions: ['camera', 'photos'],
     },
     Media: {
-      // Enables full gallery scan on Android (like Google Photos).
-      // Requires READ_MEDIA_IMAGES / READ_MEDIA_VIDEOS in AndroidManifest.xml.
       androidGalleryMode: true,
     },
   },

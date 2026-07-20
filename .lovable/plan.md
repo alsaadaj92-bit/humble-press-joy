@@ -1,106 +1,115 @@
-# خطة شاملة: OTA + تطابق تصميمي كامل + عرض بعرض الشاشة
+# خطة الإصلاح الشاملة — مطابقة Google Photos
 
-سيتم التنفيذ كاملاً دفعة واحدة، مع اختبار بعد كل موجة (build + typecheck + tests).
+بعد فحص الصور المرفقة والكود، هذه خطة تنفيذ متكاملة تُنجز دفعة واحدة.
 
----
+## 1) إصلاحات حرجة (Bugs)
 
-## الجزء 1: تفعيل OTA (تحديثات فورية دون إعادة تثبيت APK يدوياً)
+**أ. الصور لا تظهر**
+- سبب جذري: `useResolvedAssets` يعتمد على مزوّد نشط قبل عرض الـ blob المحلي في بعض المسارات، و`useNativeInit` قد لا يستدعي `scanDeviceGallery` بعد منح إذن جديد.
+- الحل: عرض فوري من `asset.blob` عبر `URL.createObjectURL` **قبل** أي منطق مزوّد، تحرير الـ URLs عند التفريغ، وإعادة الفحص التلقائي عند تغيّر حالة الأذونات (event listener على `visibilitychange`).
 
-**الآلية: Version Banner + Auto-download من GitHub Releases** (Zero-Cloud متوافق — لا خدمات طرف ثالث).
+**ب. زر الرجوع لا يعمل (Android)**
+- إضافة `App.addListener('backButton')` من `@capacitor/app`: يغلق Lightbox → يخرج من Selection → يعود لتبويب "الصور" → ثم يخرج من التطبيق.
 
-**كيف يعمل:**
-1. GitHub Actions يبني APK ويرفعه كـ Release عند كل push.
-2. التطبيق عند الفتح يفحص GitHub Releases API (عام، بلا مفاتيح).
-3. إن وُجد إصدار أحدث → بانر في الأعلى: "تحديث متاح — v1.2.3" + زر "تحميل وتثبيت".
-4. الزر ينزّل APK إلى Downloads ويفتح مثبّت Android عبر `@capacitor/file-opener`.
-5. Android يعرض شاشة الترقية الأصلية — المستخدم يوافق.
+**ج. زر تبديل شكل العرض (شبكة/مربعات/قائمة) لا يعمل**
+- ربط `DensityToggle` بالحالة الفعلية `density` في `Index.tsx` وتمريرها إلى `PhotoGrid` (حالياً معزول).
 
-**الملفات:**
-- `src/lib/ota.ts` — فحص الإصدار (مقارنة `APP_VERSION` من `package.json` مع آخر tag).
-- `src/hooks/useOtaCheck.ts` — يعمل عند launch + كل 6 ساعات.
-- `src/components/gallery/UpdateBanner.tsx` — بانر علوي.
-- إضافة قسم "التحديثات" في `SettingsPage` (فحص يدوي + الإصدار الحالي + سجل التحديثات).
-- تحديث `.github/workflows/android-build.yml` — إنشاء GitHub Release تلقائي عند tag push.
-- `scripts/prepare-android.mjs` — إضافة `REQUEST_INSTALL_PACKAGES` للـ manifest.
-- تثبيت `@capacitor/file-opener` + `@capacitor/filesystem` (موجود).
+**د. الذكريات لا تتغير تلقائياً**
+- إضافة carousel مع `setInterval` كل 5 ثوانٍ + swipe gestures، ودوران عبر الذكريات الأسبوعية/السنوية.
 
----
+## 2) مطابقة Google Photos (تصميم)
 
-## الجزء 2: عرض بعرض الشاشة كاملاً (Full-Bleed Layout) ⭐ جديد
+**Top Bar** (مطابق للصور المرفقة):
+- شعار دوّار + "Photos" — نقاط إشعار + زر `+` + جرس + Avatar المستخدم
+- شريط بحث في الوسط مثل GPhotos الجديد
+- رقاقات (Chips) أسفل: ذكريات / أشخاص / أماكن — إخفاء الشرائط عند التمرير للأسفل، إظهارها للأعلى
 
-**المشكلة:** الحاوية الحالية تقصر العرض (`max-w-*`) وتترك هوامش جانبية كبيرة على الشاشات الكبيرة.
+**Bottom Nav** (4 تبويبات مطابقة تماماً):
+- Photos (الرئيسي) — Collections (المكتبة) — Create (إنشاء) — Search (بحث)
+- الأيقونة النشطة تحصل على خلفية "pill" زرقاء شفافة
 
-**الحل:**
-- إزالة `src/App.css` (يحتوي `max-width: 1280px` على `#root` وهو المتسبب الرئيسي).
-- `src/pages/Index.tsx` — إزالة أي `container` / `max-w-*` من الحاوية الرئيسية للشبكة.
-- الشبكة تمتد من الحافة للحافة مع padding داخلي بسيط فقط (`px-2` أو `px-4`).
-- الـ Sidebar يبقى بعرضه الثابت (256px) والمحتوى يأخذ 100% من المتبقي.
-- زيادة أعمدة `densityColClasses` للشاشات الكبيرة (`2xl:masonry-col-10`) لملء العرض.
-- إضافة breakpoint `2xl` (1536px) و`3xl` مخصّص (1920px) في `tailwind.config.ts`.
-- `TopBar` يمتد لكامل العرض بدلاً من كونه محاذياً للحاوية.
+**Collections/Library** (مطابق لصورك):
+- شبكة 2×N: Favourites, Bin, Screenshots, Archive
+- بلاطات كبيرة: Albums, On this device, People, Moments
+- قوائم: Screenshots, Videos, Documents, Utilities
 
----
+**Photos view**:
+- عناوين تاريخ يسارية "Sat 4 Jul" + زر تحديد + قائمة 3-نقاط لكل قسم
+- عرض full-bleed بدون هوامش
 
-## الجزء 3: تطابق تصميمي مع Google Photos
+**Lightbox المحسّن**:
+- سحب لأعلى لعرض التفاصيل (info sheet)، سحب لأسفل للإغلاق
+- شريط thumbnails أسفل للتصفح السريع
+- Zoom بإصبعين + double-tap
+- انتقالات View Transitions محسّنة
 
-### الفروقات الحالية:
+**Profile Sheet** (مطابق لصورتك):
+- ضغط الـ Avatar يفتح Bottom Sheet: الاسم + البريد + استخدام التخزين (مع شريط تقدم) + Manage/Switch + قائمة إجراءات
 
-| العنصر | Google Photos | نحن الآن | الحل |
-|---|---|---|---|
-| رأس الصفحة | شريط بحث عائم كبير مركزي | Hero كبير بعنوان | حذف Hero، بحث عائم |
-| الشبكة | مربعات متساوية 2px gap | Masonry أعمدة | CSS Grid `aspect-square` + gap-0.5 |
-| Sticky headers | يلتصق بأعلى قوي | خفيف | تقوية `bg-background` + shadow |
-| Bottom Nav | 4 تبويبات | 5 تبويبات ✓ (قريب) | تقليم إلى 4 (Photos/Search/Library/Sharing) |
-| FAB | لا يوجد على ديسكتوب | ظاهر دائماً | إخفاء `md:hidden` |
-| Library Hub | صفحة بطاقات موحّدة | أقسام منفصلة | تحسين `LibraryHub` |
-| زر اختيار | يظهر عند hover ✓ | مطبّق ✓ | لا تغيير |
-| خلفية | أسود صافي `#000` | `#1b1c1e` | تحويل `--background` إلى `0 0% 0%` |
-| Lightbox | overlays تختفي تلقائياً | ثابتة | auto-hide بعد 2 ثانية |
-| Density toggle | Zoom بسيط | 3 خيارات ✓ | لا تغيير |
+## 3) معالج الأذونات (First-Launch Wizard)
 
-### التنفيذ في موجات:
+شاشة كاملة عند أول تشغيل تطلب دفعة واحدة وبشرح واضح:
+1. الوصول لكل الصور والفيديوهات
+2. الكاميرا
+3. الإشعارات
+4. الموقع (لتفاصيل GPS)
+5. تعطيل تحسين البطارية (للمزامنة الخلفية)
+6. تشغيل: الفحص التلقائي، التنظيم بالذكاء الاصطناعي، الوجوه، OCR، المزامنة التلقائية
 
-**موجة A — الأساسيات البصرية + Full-width:**
-- إزالة `App.css`، فتح الحاوية للعرض الكامل.
-- `--background: 0 0% 0%` + `--card: 0 0% 8%`.
-- Sticky date headers أقوى (bg-black/90 + shadow).
-- إزالة `SectionHero` من الصور.
-- زيادة أعمدة الشبكة للشاشات الكبيرة.
+مع مفاتيح تشغيل/إيقاف لكل ميزة، ثم "متابعة". يُحفظ التنفيذ في `localStorage`.
 
-**موجة B — التنقّل:**
-- `TopBar` بحث عائم مركزي (`rounded-full`, `max-w-xl mx-auto`).
-- تقليم `MobileNav` إلى 4 تبويبات.
-- إخفاء `UploadFab` على ديسكتوب.
+## 4) تجميع إضافاتنا في مكان واحد
 
-**موجة C — التفاصيل:**
-- Lightbox: auto-hide overlays بعد 2s.
-- تحسين `LibraryHub` كبطاقات موحّدة.
+قسم جديد في المكتبة **"أدواتنا المتقدمة"** (Zero-Cloud Tools) يجمع:
+- Telegram Sync — E2EE Vault — Locked Folder — Face Clustering — CLIP Search — OCR — Duplicates — Magic Eraser — Doc Scanner — Live Albums — Backup/Restore — Places Map — Provider Rules — OTA Updates
 
-**موجة D — OTA:**
-- تنفيذ نظام Version Banner كاملاً.
+## 5) شاشة كاملة (Immersive Edge-to-Edge)
 
----
+- `StatusBar.setOverlaysWebView({ overlay: true })` + `StatusBar.setStyle(Dark)` — شفافية كاملة
+- `NavigationBar.setTransparency(true)` (Android)
+- `viewport-fit=cover` في `index.html`
+- استخدام `env(safe-area-inset-*)` في التوب-بار والبوتوم-ناف
+- إخفاء شريط الحالة عند Lightbox
 
-## اختبار بعد كل موجة
-- `bun run build` — التأكد من عدم كسر الأنواع.
-- `bunx vitest run` — الاختبارات الموجودة.
-- Playwright screenshot — التحقق البصري (خصوصاً عرض الشاشة الكامل على 1920px).
+## القسم التقني
 
----
+**ملفات جديدة:**
+- `src/components/gallery/PermissionsWizard.tsx`
+- `src/components/gallery/ProfileSheet.tsx`
+- `src/components/gallery/AdvancedToolsHub.tsx`
+- `src/components/gallery/MemoriesCarousel.tsx`
+- `src/hooks/useBackButton.ts`
+- `src/hooks/useImmersive.ts`
 
-## بعد التنفيذ: فروقات متبقية (نابعة من طبيعة Zero-Cloud، لن تُنفّذ)
+**ملفات تُعدَّل:**
+- `src/pages/Index.tsx` — ربط density، wizard، back button، immersive init
+- `src/components/gallery/TopBar.tsx` — تخطيط GPhotos الجديد
+- `src/components/gallery/MobileNav.tsx` — Photos/Collections/Create/Search
+- `src/components/gallery/LibraryHub.tsx` — تخطيط Collections الجديد
+- `src/components/gallery/Lightbox.tsx` — thumbnails, swipe, zoom
+- `src/components/gallery/MemoriesPanel.tsx` → carousel تلقائي
+- `src/hooks/useNativeInit.ts` — إعادة فحص عند العودة للتطبيق
+- `src/hooks/useResolvedAssets.ts` — أولوية مطلقة للـ blob
+- `index.html` — viewport-fit=cover
+- `capacitor.config.ts` — StatusBar overlay
+- `scripts/prepare-android.mjs` — تفعيل edge-to-edge في `styles.xml`
 
-1. Google Lens (يحتاج AI سحابي).
-2. Assistant/Stylize AI الضخم.
-3. Cinematic Photos (depth server-side).
-4. Cast إلى Nest Hub.
-5. Print Store التجاري.
-6. Partner Sharing عبر حسابات Google.
-7. Cross-device sync الفوري.
-8. Storage manager (Google One).
-9. Face grouping بأسماء من جهات الاتصال Google.
-10. Auto-upload من كل التطبيقات (يحتاج background service كامل).
+**Capacitor plugins مطلوبة (تُثبَّت تلقائياً):**
+- `@capacitor/app` (زر الرجوع)
+- `@capacitor/status-bar` (شفافية)
+- `@capawesome/capacitor-android-edge-to-edge-support`
 
----
+**اختبار:**
+- Typecheck + build بعد كل موجة
+- تحقق أن `photoDb.assets` يحتوي blob قابل للعرض دون مزوّد
+- تحقق أن الـ URLs تُحرَّر (لا تسريب ذاكرة)
 
-قل "نفّذ" لأبدأ.
+## التنفيذ
+
+سيتم بأربع موجات متتابعة داخل نفس الرد بعد الموافقة:
+1. Infrastructure (plugins, back-button, immersive, wizard)
+2. Bug fixes (photos display, density toggle, back)
+3. UI parity (TopBar/BottomNav/Library/ProfileSheet)
+4. Polish (Lightbox، Memories carousel، Advanced Tools Hub)
+
+بعد الموافقة سأنفّذ كل شيء دفعة واحدة.
