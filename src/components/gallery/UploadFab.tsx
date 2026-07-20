@@ -36,23 +36,68 @@ export function UploadFab() {
     }
 
     const hasProvider = !!(active && activeConfig?.configured);
+    const { photoDb } = await import("@/lib/photoDb");
 
-    // للحزم الكبيرة (>200 ملف): تخطّي معاينة EXIF التفصيلية لتفادي تجميد المتصفح
+    // Insert every imported file straight into the gallery (works with or
+    // without a sync provider). The blob is stored locally in IndexedDB so it
+    // survives reloads and shows up in the grid immediately.
+    const insertAsset = async (file: File) => {
+      const id = `local-${file.size}-${file.lastModified}-${file.name}`;
+      const existing = await photoDb.assets.get(id);
+      if (existing) return;
+      const isVideo = isVideoMime(file.type);
+      let width: number | undefined;
+      let height: number | undefined;
+      let dateTaken = file.lastModified || Date.now();
+      let posterDataUrl: string | undefined;
+      let duration: number | undefined;
+      try {
+        if (isVideo) {
+          const meta = await extractVideoMeta(file);
+          width = meta.width;
+          height = meta.height;
+          duration = meta.duration;
+          posterDataUrl = meta.posterDataUrl;
+        } else {
+          const exif = await extractExif(file);
+          width = exif.width;
+          height = exif.height;
+          if (exif.dateTaken) dateTaken = exif.dateTaken;
+        }
+      } catch { /* ignore metadata failures */ }
+      await photoDb.assets.put({
+        id,
+        provider: active ?? "device",
+        name: file.name,
+        size: file.size,
+        mime: file.type || (isVideo ? "video/*" : "image/*"),
+        width,
+        height,
+        date: dateTaken,
+        createdAt: Date.now(),
+        kind: isVideo ? "video" : "image",
+        blob: file,
+        posterDataUrl,
+        duration,
+      });
+    };
+
+    // Large batches: skip the per-file preview modal to avoid freezing.
     const LARGE_BATCH = 200;
     if (arr.length > LARGE_BATCH) {
-      toast.info(`جارٍ استيراد ${arr.length.toLocaleString("ar-EG")} ملف...`, {
-        description: "سيتم استخراج EXIF لاحقاً بالخلفية أثناء المزامنة.",
-      });
+      toast.info(`جارٍ استيراد ${arr.length.toLocaleString("ar-EG")} ملف...`);
+      const CHUNK = 100;
+      for (let i = 0; i < arr.length; i += CHUNK) {
+        await Promise.all(arr.slice(i, i + CHUNK).map(insertAsset));
+      }
       if (hasProvider) {
-        // إضافة على دفعات لتفادي حجز الذاكرة
-        const CHUNK = 500;
-        for (let i = 0; i < arr.length; i += CHUNK) {
-          await enqueueFiles(arr.slice(i, i + CHUNK));
+        for (let i = 0; i < arr.length; i += 500) {
+          await enqueueFiles(arr.slice(i, i + 500));
         }
-        toast.success(`أُضيفت ${arr.length.toLocaleString("ar-EG")} ملف إلى الطابور`);
+        toast.success(`أُضيفت ${arr.length.toLocaleString("ar-EG")} صورة للمعرض والطابور`);
       } else {
-        toast.warning("لا يوجد مزود تخزين نشط", {
-          description: "فعّل مزوداً (تيليجرام/خادم محلي) لبدء الرفع.",
+        toast.success(`أُضيفت ${arr.length.toLocaleString("ar-EG")} صورة للمعرض`, {
+          description: "فعّل مزود تخزين لبدء الرفع/المزامنة.",
         });
       }
       return;
@@ -67,17 +112,17 @@ export function UploadFab() {
     }));
     setRows(initial);
 
-    // Extract metadata locally for preview (works with or without a provider).
     for (let i = 0; i < arr.length; i++) {
       const file = arr[i];
       const isVideo = isVideoMime(file.type);
       try {
+        await insertAsset(file);
         let asset: MediaAsset;
         if (isVideo) {
           const meta = await extractVideoMeta(file);
           asset = {
             id: initial[i].key,
-            provider: active ?? "telegram",
+            provider: active ?? "device",
             name: file.name,
             size: file.size,
             mime: file.type,
@@ -93,7 +138,7 @@ export function UploadFab() {
           const exif = await extractExif(file);
           asset = {
             id: initial[i].key,
-            provider: active ?? "telegram",
+            provider: active ?? "device",
             name: file.name,
             size: file.size,
             mime: file.type,
@@ -130,10 +175,10 @@ export function UploadFab() {
           : settings.paused
           ? "المزامنة موقوفة مؤقتاً — استأنفها من مركز المزامنة."
           : `سيبدأ الرفع تلقائياً عبر ${labelOf(active!)}.`;
-      toast.success(`أُضيفت ${arr.length} صورة للطابور`, { description: desc });
+      toast.success(`أُضيفت ${arr.length} صورة للمعرض والطابور`, { description: desc });
     } else {
-      toast.warning("لا يوجد مزود تخزين نشط", {
-        description: "الصور قُرئت محلياً لعرض EXIF فقط. فعّل مزوداً لبدء الرفع.",
+      toast.success(`أُضيفت ${arr.length} صورة للمعرض`, {
+        description: "فعّل مزود تخزين لبدء الرفع/المزامنة.",
       });
     }
   };
