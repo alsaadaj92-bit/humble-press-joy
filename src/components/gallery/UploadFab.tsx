@@ -37,6 +37,27 @@ export function UploadFab() {
 
     const hasProvider = !!(active && activeConfig?.configured);
 
+    // للحزم الكبيرة (>200 ملف): تخطّي معاينة EXIF التفصيلية لتفادي تجميد المتصفح
+    const LARGE_BATCH = 200;
+    if (arr.length > LARGE_BATCH) {
+      toast.info(`جارٍ استيراد ${arr.length.toLocaleString("ar-EG")} ملف...`, {
+        description: "سيتم استخراج EXIF لاحقاً بالخلفية أثناء المزامنة.",
+      });
+      if (hasProvider) {
+        // إضافة على دفعات لتفادي حجز الذاكرة
+        const CHUNK = 500;
+        for (let i = 0; i < arr.length; i += CHUNK) {
+          await enqueueFiles(arr.slice(i, i + CHUNK));
+        }
+        toast.success(`أُضيفت ${arr.length.toLocaleString("ar-EG")} ملف إلى الطابور`);
+      } else {
+        toast.warning("لا يوجد مزود تخزين نشط", {
+          description: "فعّل مزوداً (تيليجرام/خادم محلي) لبدء الرفع.",
+        });
+      }
+      return;
+    }
+
     const initial: Row[] = arr.map((f, i) => ({
       key: `${Date.now()}-${i}-${f.name}`,
       name: f.name,
