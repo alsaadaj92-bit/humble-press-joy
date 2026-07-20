@@ -17,7 +17,24 @@ function fullSrc(p: MockPhoto) {
 export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
   const stories = useMemo(() => buildMemories(photos), [photos]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [featured, setFeatured] = useState(0);
+  const railRef = useRef<HTMLDivElement>(null);
   const openStory = stories.find((s) => s.id === openId) ?? null;
+
+  // Auto-rotate the featured story every 5s (Google Photos-style hero rail).
+  useEffect(() => {
+    if (!stories.length || openId) return;
+    const t = window.setInterval(() => {
+      setFeatured((v) => (v + 1) % stories.length);
+    }, 5000);
+    return () => window.clearInterval(t);
+  }, [stories.length, openId]);
+
+  // Scroll the rail so the featured card is in view.
+  useEffect(() => {
+    const el = railRef.current?.querySelector<HTMLElement>(`[data-story-idx="${featured}"]`);
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [featured]);
 
   if (!stories.length) {
     return (
