@@ -127,7 +127,7 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
       aria-modal="true"
     >
       {/* Top bar */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-black/60 to-transparent p-4">
+      <div className={cn("absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-black/60 to-transparent p-4 transition-opacity duration-300", showChrome ? "opacity-100" : "pointer-events-none opacity-0")}>
         <button
           onClick={onClose}
           className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition hover:bg-white/10"
@@ -181,18 +181,19 @@ export function Lightbox({ photos, index, onClose, onIndexChange }: LightboxProp
       {/* Prev / Next (mirrored for RTL: chevron-right = previous) */}
       <button
         onClick={goPrev}
-        className="absolute right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition hover:bg-black/60 md:block"
+        className={cn("absolute right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition-all duration-300 hover:bg-black/60 md:block", showChrome ? "opacity-100" : "pointer-events-none opacity-0")}
         aria-label="السابق"
       >
         <ChevronRight className="h-6 w-6" />
       </button>
       <button
         onClick={goNext}
-        className="absolute left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition hover:bg-black/60 md:block"
+        className={cn("absolute left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition-all duration-300 hover:bg-black/60 md:block", showChrome ? "opacity-100" : "pointer-events-none opacity-0")}
         aria-label="التالي"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
+
 
       {/* Media */}
       <div className="flex h-full w-full items-center justify-center p-4 md:p-10">
