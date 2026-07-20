@@ -205,30 +205,40 @@ export function UploadFab() {
       />
 
       <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:left-6" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
-        {menuOpen && isNative() && (
+        {menuOpen && (
           <>
-            <button
-              onClick={nativeCamera}
-              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
-            >
-              <CameraIcon className="h-4 w-4" /> كاميرا
-            </button>
-            <button
-              onClick={nativeGallery}
-              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
-            >
-              <ImageIcon className="h-4 w-4" /> من معرض الهاتف
-            </button>
+            {isNative() && (
+              <>
+                <button
+                  onClick={nativeCamera}
+                  className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+                >
+                  <CameraIcon className="h-4 w-4" /> كاميرا
+                </button>
+                <button
+                  onClick={nativeGallery}
+                  className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+                >
+                  <ImageIcon className="h-4 w-4" /> كل صور المعرض (بلا حد)
+                </button>
+              </>
+            )}
             <button
               onClick={() => { setMenuOpen(false); openPicker(); }}
               className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
             >
-              <Upload className="h-4 w-4" /> ملفات
+              <Upload className="h-4 w-4" /> اختيار ملفات (متعدد)
+            </button>
+            <button
+              onClick={openFolder}
+              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+            >
+              <Upload className="h-4 w-4" /> استيراد مجلد كامل
             </button>
           </>
         )}
         <button
-          onClick={() => (isNative() ? setMenuOpen((v) => !v) : openPicker())}
+          onClick={() => setMenuOpen((v) => !v)}
           className="flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95"
           style={{ boxShadow: "var(--shadow-fab)" }}
         >
