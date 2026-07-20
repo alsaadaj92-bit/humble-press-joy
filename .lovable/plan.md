@@ -1,73 +1,106 @@
-# مقارنة تصميمية كاملة مع Google Photos وخطة التنفيذ
+# خطة شاملة: OTA + تطابق تصميمي كامل + عرض بعرض الشاشة
 
-## 1) المقارنة صفحة بصفحة
+سيتم التنفيذ كاملاً دفعة واحدة، مع اختبار بعد كل موجة (build + typecheck + tests).
 
-### الصور (Photos) — الشاشة الرئيسية
-| العنصر | Google Photos | لدينا | الفارق |
+---
+
+## الجزء 1: تفعيل OTA (تحديثات فورية دون إعادة تثبيت APK يدوياً)
+
+**الآلية: Version Banner + Auto-download من GitHub Releases** (Zero-Cloud متوافق — لا خدمات طرف ثالث).
+
+**كيف يعمل:**
+1. GitHub Actions يبني APK ويرفعه كـ Release عند كل push.
+2. التطبيق عند الفتح يفحص GitHub Releases API (عام، بلا مفاتيح).
+3. إن وُجد إصدار أحدث → بانر في الأعلى: "تحديث متاح — v1.2.3" + زر "تحميل وتثبيت".
+4. الزر ينزّل APK إلى Downloads ويفتح مثبّت Android عبر `@capacitor/file-opener`.
+5. Android يعرض شاشة الترقية الأصلية — المستخدم يوافق.
+
+**الملفات:**
+- `src/lib/ota.ts` — فحص الإصدار (مقارنة `APP_VERSION` من `package.json` مع آخر tag).
+- `src/hooks/useOtaCheck.ts` — يعمل عند launch + كل 6 ساعات.
+- `src/components/gallery/UpdateBanner.tsx` — بانر علوي.
+- إضافة قسم "التحديثات" في `SettingsPage` (فحص يدوي + الإصدار الحالي + سجل التحديثات).
+- تحديث `.github/workflows/android-build.yml` — إنشاء GitHub Release تلقائي عند tag push.
+- `scripts/prepare-android.mjs` — إضافة `REQUEST_INSTALL_PACKAGES` للـ manifest.
+- تثبيت `@capacitor/file-opener` + `@capacitor/filesystem` (موجود).
+
+---
+
+## الجزء 2: عرض بعرض الشاشة كاملاً (Full-Bleed Layout) ⭐ جديد
+
+**المشكلة:** الحاوية الحالية تقصر العرض (`max-w-*`) وتترك هوامش جانبية كبيرة على الشاشات الكبيرة.
+
+**الحل:**
+- إزالة `src/App.css` (يحتوي `max-width: 1280px` على `#root` وهو المتسبب الرئيسي).
+- `src/pages/Index.tsx` — إزالة أي `container` / `max-w-*` من الحاوية الرئيسية للشبكة.
+- الشبكة تمتد من الحافة للحافة مع padding داخلي بسيط فقط (`px-2` أو `px-4`).
+- الـ Sidebar يبقى بعرضه الثابت (256px) والمحتوى يأخذ 100% من المتبقي.
+- زيادة أعمدة `densityColClasses` للشاشات الكبيرة (`2xl:masonry-col-10`) لملء العرض.
+- إضافة breakpoint `2xl` (1536px) و`3xl` مخصّص (1920px) في `tailwind.config.ts`.
+- `TopBar` يمتد لكامل العرض بدلاً من كونه محاذياً للحاوية.
+
+---
+
+## الجزء 3: تطابق تصميمي مع Google Photos
+
+### الفروقات الحالية:
+
+| العنصر | Google Photos | نحن الآن | الحل |
 |---|---|---|---|
-| رأس الصفحة | شريط بحث علوي عائم فقط، لا يوجد "Hero" | لدينا `SectionHero` كبير بعنوان "الصور" وخلفية متدرجة | زائد |
-| فواصل التاريخ | Sticky headers (اليوم/أمس/الشهر/السنة) | `PhotoGrid` يعرض buckets بدون sticky عناوين واضحة | ناقص |
-| شبكة | مربعات متساوية بفواصل 2px، Zoom بـ +/- | Masonry بأعمدة | مختلف |
-| Scrubber | شريط سنوات على اليمين | موجود (`TimelineScrubber`) | مطابق |
-| FAB رفع | لا يوجد (الرفع من زر داخل TopBar) | UploadFab دائري كبير | زائد |
+| رأس الصفحة | شريط بحث عائم كبير مركزي | Hero كبير بعنوان | حذف Hero، بحث عائم |
+| الشبكة | مربعات متساوية 2px gap | Masonry أعمدة | CSS Grid `aspect-square` + gap-0.5 |
+| Sticky headers | يلتصق بأعلى قوي | خفيف | تقوية `bg-background` + shadow |
+| Bottom Nav | 4 تبويبات | 5 تبويبات ✓ (قريب) | تقليم إلى 4 (Photos/Search/Library/Sharing) |
+| FAB | لا يوجد على ديسكتوب | ظاهر دائماً | إخفاء `md:hidden` |
+| Library Hub | صفحة بطاقات موحّدة | أقسام منفصلة | تحسين `LibraryHub` |
+| زر اختيار | يظهر عند hover ✓ | مطبّق ✓ | لا تغيير |
+| خلفية | أسود صافي `#000` | `#1b1c1e` | تحويل `--background` إلى `0 0% 0%` |
+| Lightbox | overlays تختفي تلقائياً | ثابتة | auto-hide بعد 2 ثانية |
+| Density toggle | Zoom بسيط | 3 خيارات ✓ | لا تغيير |
 
-### المكتبة (Library)
-| Google Photos | لدينا | الفارق |
-|---|---|---|
-| صفحة موحّدة: Albums + Favorites + Archive + Trash + Locked Folder + Utilities كبطاقات | لدينا كل واحد كقسم منفصل في الشريط الجانبي | ناقص: لا يوجد hub موحّد |
+### التنفيذ في موجات:
 
-### البحث/Explore
-مطابق بشكل معقول: People, Places, Things, Categories.
+**موجة A — الأساسيات البصرية + Full-width:**
+- إزالة `App.css`، فتح الحاوية للعرض الكامل.
+- `--background: 0 0% 0%` + `--card: 0 0% 8%`.
+- Sticky date headers أقوى (bg-black/90 + shadow).
+- إزالة `SectionHero` من الصور.
+- زيادة أعمدة الشبكة للشاشات الكبيرة.
 
-### الذكريات
-مطابق (`MemoriesPanel`).
+**موجة B — التنقّل:**
+- `TopBar` بحث عائم مركزي (`rounded-full`, `max-w-xl mx-auto`).
+- تقليم `MobileNav` إلى 4 تبويبات.
+- إخفاء `UploadFab` على ديسكتوب.
 
-### المشاركة
-Google Photos: Conversations + Partner + Shared albums. لدينا stub فقط.
+**موجة C — التفاصيل:**
+- Lightbox: auto-hide overlays بعد 2s.
+- تحسين `LibraryHub` كبطاقات موحّدة.
 
-### الإعدادات — أهم فارق (وهو ما نلمّه الآن)
-Google Photos تجمع كل الضبط في صفحة واحدة طويلة بأقسام:
-- Backup, Storage, Photos grid, Memories, Notifications, Sharing, Privacy, Locked Folder, Partner sharing, Connected apps, About.
-
-**لدينا حالياً** الإعدادات فيها فقط: `IdentityCard` + `EncryptionPanel` + `BackupPanel`.
-كل الباقي متناثر في أقسام: `providers`, `sync`, `locked`, `autoPipeline consent`, `notifications` (داخل Backup)، رخصة MCP، ضبط الضغط (داخل Sync)، ضبط الذكريات، إلخ.
-
----
-
-## 2) قائمة الفروقات التي سنجمعها في صفحة الإعدادات
-
-إعادة تصميم `settings` كصفحة Google-Photos-style: عمود واحد، أقسام مطوية/مفصولة بعنوان + وصف قصير + محتوى:
-
-1. **الحساب والهوية** — من `IdentityCard` (الاسم الذي يظهر في تعليقات تيليجرام).
-2. **النسخ الاحتياطي والمزامنة** — رابط لمركز المزامنة + ملخّص الحالة + toggles (تلقائي/يدوي، Wi-Fi فقط، الحد الأقصى للحجم) — منقول مختصر من `SyncCenter`.
-3. **جودة الرفع (الضغط)** — بطاقات Preset (Original/High/Balanced/Small) — منقولة من `SyncCenter`.
-4. **مزوّدو التخزين** — بطاقة ملخّص + زر "إدارة" ينقل لـ `providers`.
-5. **المجلد المؤمَّن (PIN)** — منقول مختصر من `LockedFolderPanel` (تعيين/تغيير PIN فقط).
-6. **التشفير من طرف لطرف (E2EE)** — من `EncryptionPanel`.
-7. **المعالجة الذكية المحلية (Auto-Pipeline)** — toggles لـ OCR/CLIP/Faces (من `AutoPipelineConsent`).
-8. **الإشعارات** — إذن المتصفح + toggles (اكتمال المزامنة، فشل). موجود جزئياً في `BackupPanel`.
-9. **النسخة الاحتياطية للميتاداتا** — تصدير/استيراد JSON + النسخ الأسبوعي التلقائي — من `BackupPanel`.
-10. **الخصوصية والبيانات** — Zero-Cloud statement + زر "مسح كل الميتاداتا محلياً" + إفراغ سلة المحذوفات.
-11. **إعداد الصور والذكريات** — تكرار الذكريات، إخفاء تواريخ معينة (بسيط).
-12. **PWA والتخزين المحلي** — حالة الـ Service Worker + استخدام IndexedDB + زر "تحديث/إعادة تسجيل".
-13. **حول التطبيق** — الإصدار، الترخيص، رابط GitHub/مستودع، شارة "بدون سحابة".
+**موجة D — OTA:**
+- تنفيذ نظام Version Banner كاملاً.
 
 ---
 
-## 3) خطة التنفيذ (هذه الرسالة فقط: الإعدادات)
+## اختبار بعد كل موجة
+- `bun run build` — التأكد من عدم كسر الأنواع.
+- `bunx vitest run` — الاختبارات الموجودة.
+- Playwright screenshot — التحقق البصري (خصوصاً عرض الشاشة الكامل على 1920px).
 
-- إنشاء `src/components/gallery/SettingsPage.tsx` يحوي كل الأقسام أعلاه كبطاقات (Card sections) بنمط Google Photos: عنوان، وصف رمادي صغير، محتوى، فاصل.
-- إعادة استخدام المكونات القائمة (`IdentityCard`, `EncryptionPanel`, `BackupPanel`, أجزاء من `SyncCenter` و`LockedFolderPanel` و`AutoPipelineConsent`) عبر استخراج أقسام قابلة للتضمين بدل تكرار المنطق.
-- تحديث `src/pages/Index.tsx` ليعرض `<SettingsPage onNavigate={setActiveSection} />` عند `activeSection === "settings"` بدل الكتلة الحالية.
-- إبقاء صفحات `providers` و`sync` و`locked` كما هي (الإعدادات تعرض ملخّصاً وزر "فتح الصفحة الكاملة").
-- التركيز على التصميم فقط — لا تغييرات في المنطق أو التخزين.
+---
 
-## تفاصيل تقنية
+## بعد التنفيذ: فروقات متبقية (نابعة من طبيعة Zero-Cloud، لن تُنفّذ)
 
-- ملف جديد واحد: `SettingsPage.tsx`.
-- سنستخرج من `SyncCenter` كومبوننت مساعد `CompressPresetPicker` و`SyncQuickToggles` لإعادة الاستخدام.
-- سنستخرج من `LockedFolderPanel` كومبوننت `LockedFolderPinSettings` (فقط إعدادات PIN بدون شبكة الصور).
-- سنستخرج من `AutoPipelineConsent` كومبوننت `AutoPipelineToggles`.
-- لا تغيير في `photoDb` ولا في أي منطق تخزين/رفع.
+1. Google Lens (يحتاج AI سحابي).
+2. Assistant/Stylize AI الضخم.
+3. Cinematic Photos (depth server-side).
+4. Cast إلى Nest Hub.
+5. Print Store التجاري.
+6. Partner Sharing عبر حسابات Google.
+7. Cross-device sync الفوري.
+8. Storage manager (Google One).
+9. Face grouping بأسماء من جهات الاتصال Google.
+10. Auto-upload من كل التطبيقات (يحتاج background service كامل).
+
+---
 
 قل "نفّذ" لأبدأ.
