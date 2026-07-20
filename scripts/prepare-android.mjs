@@ -27,6 +27,13 @@ run("npm run build");
 console.log("\n🔄 Syncing Capacitor plugins...");
 run("npx cap sync android");
 
+console.log("\n🎨 Generating launcher icon + splash from resources/...");
+try {
+  run("npx capacitor-assets generate --android");
+} catch {
+  console.warn("⚠️  capacitor-assets failed — keeping default icons.");
+}
+
 // ---- Patch AndroidManifest.xml ---------------------------------------------
 const manifestPath = resolve("android/app/src/main/AndroidManifest.xml");
 if (!existsSync(manifestPath)) {
