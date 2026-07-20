@@ -34,8 +34,9 @@ export async function takePhoto(): Promise<File | null> {
   return photoToFile(photo, "camera");
 }
 
-export async function pickFromGallery(limit = 20): Promise<File[]> {
+export async function pickFromGallery(limit = 0): Promise<File[]> {
   if (!isNative()) return [];
+  // limit: 0 = unlimited on Android/iOS (Capacitor Camera v5+)
   const { photos } = await Camera.pickImages({ quality: 92, limit });
   const files: File[] = [];
   for (const p of photos) {
