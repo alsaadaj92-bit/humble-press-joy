@@ -162,6 +162,19 @@ export function UploadFab() {
           e.target.value = "";
         }}
       />
+      <input
+        ref={folderRef}
+        type="file"
+        multiple
+        className="hidden"
+        // @ts-expect-error non-standard attrs for folder picking
+        webkitdirectory=""
+        directory=""
+        onChange={(e) => {
+          if (e.target.files) void handleFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
 
       <div
         onDragOver={(e) => {
