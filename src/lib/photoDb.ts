@@ -15,7 +15,7 @@ export interface PhotoState {
   importedAt?: number;
 }
 
-export type ProviderKind = "telegram" | "localServer" | "fileSystem";
+export type ProviderKind = "telegram" | "localServer" | "fileSystem" | "device";
 
 export interface ProviderConfig {
   kind: ProviderKind;
