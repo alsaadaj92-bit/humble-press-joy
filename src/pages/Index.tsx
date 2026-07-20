@@ -27,6 +27,8 @@ import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
+import { UpdateBanner } from "@/components/gallery/UpdateBanner";
+
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel";
@@ -297,9 +299,11 @@ const Index = () => {
       </Sheet>
 
       <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+        <UpdateBanner />
         {showScrubber && (
           <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
         )}
+
         <TopBar
           query={query}
           onQueryChange={setQuery}
@@ -333,7 +337,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="px-4 py-6 md:px-8 md:py-8">
+        <div className="px-1 py-2 sm:px-2 md:px-3">
           {selection.size > 0 && (
             <SelectionToolbar
               count={selection.size}
@@ -601,15 +605,13 @@ const Index = () => {
 
 function SectionHero({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div
-      className="mb-6 rounded-2xl border border-border p-5"
-      style={{ background: "var(--gradient-hero)" }}
-    >
-      <h1 className="text-2xl font-bold">{title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+    <div className="mb-3 px-2 pt-1">
+      <h1 className="text-lg font-semibold text-foreground/90">{title}</h1>
+      <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
     </div>
   );
 }
+
 
 function PlaceholderSection({ title, body }: { title: string; body: string }) {
   return (
