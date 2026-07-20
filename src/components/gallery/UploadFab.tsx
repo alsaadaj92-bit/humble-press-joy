@@ -135,11 +135,15 @@ export function UploadFab() {
     setMenuOpen(false);
     await tap("light");
     try {
-      const files = await pickFromGallery(30);
+      const files = await pickFromGallery(0); // 0 = بلا حد
       if (files.length) await handleFiles(files);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
+  };
+  const openFolder = () => {
+    setMenuOpen(false);
+    folderRef.current?.click();
   };
 
 
