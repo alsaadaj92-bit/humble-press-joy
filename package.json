@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "android": "node scripts/prepare-android.mjs",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "@capacitor-community/media": "^9.1.0",
