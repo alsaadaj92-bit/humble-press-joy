@@ -56,17 +56,26 @@ export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
         <h2 className="text-lg font-semibold">ذكرياتك</h2>
       </div>
 
-      <div className="scrollbar-thin -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
-        {stories.map((s) => (
+      <div ref={railRef} className="scrollbar-thin -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
+        {stories.map((s, idx) => (
           <button
             key={s.id}
+            data-story-idx={idx}
             onClick={() => setOpenId(s.id)}
-            className="group relative aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl border border-border ring-primary/40 transition hover:ring-2 md:w-48"
+            className={cn(
+              "group relative aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl border transition md:w-48",
+              idx === featured
+                ? "border-primary ring-2 ring-primary/60 scale-[1.03]"
+                : "border-border hover:ring-2 hover:ring-primary/40",
+            )}
           >
             <img
               src={coverSrc(s.cover, 400, 700)}
               alt={s.title}
-              className="h-full w-full object-cover transition group-hover:scale-105"
+              className={cn(
+                "h-full w-full object-cover transition-transform duration-700",
+                idx === featured ? "scale-110" : "group-hover:scale-105",
+              )}
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -77,6 +86,23 @@ export function MemoriesPanel({ photos }: { photos: MockPhoto[] }) {
           </button>
         ))}
       </div>
+
+      {/* Progress dots */}
+      {stories.length > 1 && (
+        <div className="mt-1 flex justify-center gap-1">
+          {stories.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setFeatured(idx)}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                idx === featured ? "w-6 bg-primary" : "w-1.5 bg-muted",
+              )}
+              aria-label={`ذكرى ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Grid of story details */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
