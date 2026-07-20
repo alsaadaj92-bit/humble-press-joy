@@ -1,14 +1,13 @@
-import { Images, LibraryBig, Search, Share2 } from "lucide-react";
+import { Images, LibraryBig, Search, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Google Photos-style 4-tab bottom nav (Photos / Search / Sharing / Library).
+// Google Photos 4-tab bottom nav (Photos / Collections / Create / Search).
 const items = [
   { id: "photos", label: "الصور", icon: Images },
-  { id: "smart", label: "بحث", icon: Search },
-  { id: "sharing", label: "مشاركة", icon: Share2 },
   { id: "library", label: "المكتبة", icon: LibraryBig },
+  { id: "create", label: "إنشاء", icon: Plus },
+  { id: "smart", label: "بحث", icon: Search },
 ];
-
 
 export function MobileNav({
   active,
@@ -19,7 +18,7 @@ export function MobileNav({
 }) {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/95 backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-background/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {items.map((it) => {
@@ -37,12 +36,12 @@ export function MobileNav({
             <div
               className={cn(
                 "grid h-8 w-14 place-items-center rounded-full transition",
-                isActive && "bg-primary/15",
+                isActive && "bg-primary/20",
               )}
             >
               <Icon className="h-5 w-5" />
             </div>
-            <span>{it.label}</span>
+            <span className={cn(isActive && "font-semibold")}>{it.label}</span>
           </button>
         );
       })}

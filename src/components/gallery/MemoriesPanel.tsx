@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { buildMemories, type MemoryStory } from "@/lib/memories";
 import type { MockPhoto } from "@/lib/mockPhotos";
