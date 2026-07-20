@@ -263,6 +263,26 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, visible, lightboxIndex, activeSection]);
 
+  // Android hardware back — close overlays in order, then leave.
+  useBackButton(() => {
+    if (searchOpen) { setSearchOpen(false); return true; }
+    if (pickerOpen) { setPickerOpen(false); return true; }
+    if (drawerOpen) { setDrawerOpen(false); return true; }
+    if (lightboxIndex !== null) { setLightboxIndex(null); return true; }
+    if (selection.size) { clearSelection(); return true; }
+    if (activeSection !== "photos") { setActiveSection("photos"); return true; }
+    return false; // let it exit the app
+  });
+
+  // "Create" tab in mobile nav opens the upload menu / file picker.
+  const handleTabSelect = useCallback((id: string) => {
+    if (id === "create") {
+      document.getElementById("lp-fab-toggle")?.click();
+      return;
+    }
+    setActiveSection(id);
+  }, []);
+
   const sectionMeta: Record<string, { title: string; sub: (n: number) => string }> = {
     photos: {
       title: "الصور",
@@ -562,7 +582,7 @@ const Index = () => {
       </main>
 
       <UploadFab />
-      <MobileNav active={activeSection} onSelect={setActiveSection} />
+      <MobileNav active={activeSection} onSelect={handleTabSelect} />
 
       <Lightbox
         photos={visible}
