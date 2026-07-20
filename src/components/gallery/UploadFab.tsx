@@ -23,6 +23,7 @@ export function UploadFab() {
   const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
   const { active, activeConfig } = useProviders();
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -35,6 +36,27 @@ export function UploadFab() {
     }
 
     const hasProvider = !!(active && activeConfig?.configured);
+
+    // للحزم الكبيرة (>200 ملف): تخطّي معاينة EXIF التفصيلية لتفادي تجميد المتصفح
+    const LARGE_BATCH = 200;
+    if (arr.length > LARGE_BATCH) {
+      toast.info(`جارٍ استيراد ${arr.length.toLocaleString("ar-EG")} ملف...`, {
+        description: "سيتم استخراج EXIF لاحقاً بالخلفية أثناء المزامنة.",
+      });
+      if (hasProvider) {
+        // إضافة على دفعات لتفادي حجز الذاكرة
+        const CHUNK = 500;
+        for (let i = 0; i < arr.length; i += CHUNK) {
+          await enqueueFiles(arr.slice(i, i + CHUNK));
+        }
+        toast.success(`أُضيفت ${arr.length.toLocaleString("ar-EG")} ملف إلى الطابور`);
+      } else {
+        toast.warning("لا يوجد مزود تخزين نشط", {
+          description: "فعّل مزوداً (تيليجرام/خادم محلي) لبدء الرفع.",
+        });
+      }
+      return;
+    }
 
     const initial: Row[] = arr.map((f, i) => ({
       key: `${Date.now()}-${i}-${f.name}`,
@@ -134,11 +156,15 @@ export function UploadFab() {
     setMenuOpen(false);
     await tap("light");
     try {
-      const files = await pickFromGallery(30);
+      const files = await pickFromGallery(0); // 0 = بلا حد
       if (files.length) await handleFiles(files);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
+  };
+  const openFolder = () => {
+    setMenuOpen(false);
+    folderRef.current?.click();
   };
 
 
@@ -152,6 +178,19 @@ export function UploadFab() {
         accept="image/*,video/*"
         multiple
         className="hidden"
+        onChange={(e) => {
+          if (e.target.files) void handleFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={folderRef}
+        type="file"
+        multiple
+        className="hidden"
+        // @ts-expect-error non-standard attrs for folder picking
+        webkitdirectory=""
+        directory=""
         onChange={(e) => {
           if (e.target.files) void handleFiles(e.target.files);
           e.target.value = "";
@@ -187,30 +226,40 @@ export function UploadFab() {
       />
 
       <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:left-6" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
-        {menuOpen && isNative() && (
+        {menuOpen && (
           <>
-            <button
-              onClick={nativeCamera}
-              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
-            >
-              <CameraIcon className="h-4 w-4" /> كاميرا
-            </button>
-            <button
-              onClick={nativeGallery}
-              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
-            >
-              <ImageIcon className="h-4 w-4" /> من معرض الهاتف
-            </button>
+            {isNative() && (
+              <>
+                <button
+                  onClick={nativeCamera}
+                  className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+                >
+                  <CameraIcon className="h-4 w-4" /> كاميرا
+                </button>
+                <button
+                  onClick={nativeGallery}
+                  className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+                >
+                  <ImageIcon className="h-4 w-4" /> كل صور المعرض (بلا حد)
+                </button>
+              </>
+            )}
             <button
               onClick={() => { setMenuOpen(false); openPicker(); }}
               className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
             >
-              <Upload className="h-4 w-4" /> ملفات
+              <Upload className="h-4 w-4" /> اختيار ملفات (متعدد)
+            </button>
+            <button
+              onClick={openFolder}
+              className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm font-semibold shadow-lg"
+            >
+              <Upload className="h-4 w-4" /> استيراد مجلد كامل
             </button>
           </>
         )}
         <button
-          onClick={() => (isNative() ? setMenuOpen((v) => !v) : openPicker())}
+          onClick={() => setMenuOpen((v) => !v)}
           className="flex items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 active:scale-95"
           style={{ boxShadow: "var(--shadow-fab)" }}
         >
