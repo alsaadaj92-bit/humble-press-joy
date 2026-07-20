@@ -4,20 +4,21 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { Network } from "@capacitor/network";
 import {
+  checkCameraPermission,
+  checkLocationPermission,
+  checkNotifPermission,
   isNative,
   notify,
-  prefGet,
-  prefSet,
   requestCameraPermission,
-  requestNotifPermission,
   requestLocationPermission,
+  requestNotifPermission,
 } from "@/lib/native";
 import { runSyncCycle } from "@/lib/syncEngine";
 
-const FIRST_RUN_KEY = "lgp:firstRunDone";
-
 // Boots native-only integrations: status bar, splash, resume/network triggers.
 // Safe on the web — every call short-circuits when Capacitor isn't present.
+// Permission prompts keep re-firing on every launch until the user grants them,
+// so a missed dialog on first launch is fixed the next time the app opens.
 export function useNativeInit() {
   useEffect(() => {
     if (!isNative()) return;
@@ -26,20 +27,36 @@ export function useNativeInit() {
     void StatusBar.setBackgroundColor({ color: "#0b0b0b" }).catch(() => undefined);
     void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => undefined);
 
-    // First-launch: proactively fire native permission prompts so the user
-    // actually sees the OS dialogs. Without an explicit request, Android/iOS
-    // never surface them.
     void (async () => {
-      const done = await prefGet(FIRST_RUN_KEY);
-      if (done === "1") return;
-      try { await requestNotifPermission(); } catch { /* denied */ }
-      try { await requestCameraPermission(); } catch { /* denied */ }
-      try { await requestLocationPermission(); } catch { /* denied */ }
-      await prefSet(FIRST_RUN_KEY, "1");
-      void notify(
-        "Localphotos Pro جاهز",
-        "امنح الأذونات ثم اضغط زر + لاستيراد صور من معرض هاتفك",
-      ).catch(() => undefined);
+      // Wait a beat so the WebView is fully attached before the OS dialog opens
+      // (some OEMs swallow prompts fired too early after launch).
+      await new Promise((r) => setTimeout(r, 600));
+
+      const askIfNeeded = async (
+        check: () => Promise<"granted" | "denied" | "prompt" | "unknown">,
+        request: () => Promise<boolean>,
+      ) => {
+        try {
+          const s = await check();
+          if (s === "granted") return true;
+          // Re-request unless the user explicitly denied and the OS won't show
+          // the dialog again — the request call is a no-op in that case, safe.
+          return await request();
+        } catch {
+          return false;
+        }
+      };
+
+      const camOk = await askIfNeeded(checkCameraPermission, requestCameraPermission);
+      await askIfNeeded(checkNotifPermission, requestNotifPermission);
+      await askIfNeeded(checkLocationPermission, requestLocationPermission);
+
+      if (camOk) {
+        void notify(
+          "Localphotos Pro جاهز",
+          "اضغط زر + ثم «من معرض الهاتف» لاختيار الصور التي تريد إدارتها.",
+        ).catch(() => undefined);
+      }
     })();
 
     const runSync = () => {
