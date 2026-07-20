@@ -27,6 +27,8 @@ import { TrashBanner } from "@/components/gallery/TrashBanner";
 import { TimelineScrubber } from "@/components/gallery/TimelineScrubber";
 import { AlbumPickerDialog } from "@/components/gallery/AlbumPickerDialog";
 import { PwaStatus } from "@/components/gallery/PwaStatus";
+import { UpdateBanner } from "@/components/gallery/UpdateBanner";
+
 import { CategoriesPanel } from "@/components/gallery/CategoriesPanel";
 import { CreationsPanel } from "@/components/gallery/CreationsPanel";
 import { DocumentScannerPanel } from "@/components/gallery/DocumentScannerPanel";
@@ -297,9 +299,11 @@ const Index = () => {
       </Sheet>
 
       <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+        <UpdateBanner />
         {showScrubber && (
           <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
         )}
+
         <TopBar
           query={query}
           onQueryChange={setQuery}
