@@ -40,7 +40,9 @@ import { SettingsPage } from "@/components/gallery/SettingsPage";
 import { QuickChips } from "@/components/gallery/QuickChips";
 import { LibraryHub } from "@/components/gallery/LibraryHub";
 import { DensityToggle } from "@/components/gallery/DensityToggle";
+import { PermissionsWizard } from "@/components/gallery/PermissionsWizard";
 import { useGridDensity } from "@/hooks/useGridDensity";
+import { useBackButton } from "@/hooks/useBackButton";
 import { runViewTransition } from "@/lib/viewTransition";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -274,6 +276,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <PermissionsWizard />
       <PwaStatus />
       <GallerySidebar
         active={activeSection}
@@ -298,11 +301,12 @@ const Index = () => {
         </SheetContent>
       </Sheet>
 
-      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main ref={mainScrollRef} className="scrollbar-thin relative flex-1 overflow-y-auto pb-24 pt-safe md:pb-0">
         <UpdateBanner />
         {showScrubber && (
           <TimelineScrubber buckets={timelineBuckets} scrollRef={mainScrollRef} />
         )}
+
 
         <TopBar
           query={query}
