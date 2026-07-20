@@ -147,6 +147,8 @@ export function PermissionsPanel() {
         })}
       </div>
 
+      {canScanDeviceGallery() && <DeviceGalleryScanCard />}
+
       <div className="rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground">
         <div className="font-semibold text-foreground">حول العمل في الخلفية</div>
         <ul className="mt-2 list-disc space-y-1 pr-4">
