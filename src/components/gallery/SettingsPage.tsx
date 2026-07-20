@@ -45,7 +45,9 @@ import {
   requestNotificationPermission,
 } from "@/lib/notifications";
 import { photoDb } from "@/lib/photoDb";
+import { APP_VERSION, getRepo, setRepo, checkForUpdate, launchApkInstall, type UpdateInfo } from "@/lib/ota";
 import { cn } from "@/lib/utils";
+
 
 type CompressPreset = "original" | "high" | "balanced" | "small";
 const PRESETS: Record<Exclude<CompressPreset, "original">, Partial<SyncSettings>> = {
@@ -121,9 +123,14 @@ export function SettingsPage({ onNavigate }: Props) {
         <PrivacySection />
       </Group>
 
+      <Group title="تحديثات التطبيق (OTA)" icon={Zap}>
+        <OtaSection />
+      </Group>
+
       <Group title="حول التطبيق" icon={Info}>
         <AboutSection />
       </Group>
+
     </div>
   );
 }
@@ -528,11 +535,84 @@ function PrivacySection() {
 function AboutSection() {
   return (
     <div className="rounded-2xl border border-border bg-card">
-      <Row title="LocalGallery Pro" desc="معرض صور خاص بك — بدون سحابة." />
+      <Row title="Localphotos Pro" desc="معرض صور خاص بك — بدون سحابة." />
       <div className="mx-3 h-px bg-border/60" />
-      <Row title="الإصدار" right={<span className="text-xs text-muted-foreground">1.0.0</span>} />
+      <Row title="الإصدار" right={<span className="text-xs text-muted-foreground" dir="ltr">v{APP_VERSION}</span>} />
       <div className="mx-3 h-px bg-border/60" />
       <Row title="الترخيص" right={<span className="text-xs text-muted-foreground">MIT</span>} />
     </div>
   );
 }
+
+function OtaSection() {
+  const [repo, setRepoState] = useState(getRepo());
+  const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const runCheck = async () => {
+    setChecking(true);
+    try {
+      const result = await checkForUpdate();
+      setInfo(result);
+      if (!getRepo()) toast.info("اضبط اسم مستودع GitHub أولاً (owner/repo)");
+      else if (result.available) toast.success(`تحديث متاح: v${result.latestVersion}`);
+      else if (result.latestVersion) toast.message(`أنت على أحدث إصدار (v${result.currentVersion})`);
+      else toast.error("تعذّر الوصول إلى GitHub");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+      <div>
+        <p className="text-sm font-medium">مستودع GitHub للتحديثات</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          صيغة <span dir="ltr" className="font-mono">owner/repo</span>. عند كل Release جديد يظهر بانر تحديث تلقائي.
+        </p>
+      </div>
+      <input
+        dir="ltr"
+        placeholder="username/localphotos-pro"
+        value={repo}
+        onChange={(e) => {
+          setRepoState(e.target.value);
+          setRepo(e.target.value);
+        }}
+        className="input-field font-mono"
+      />
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs text-muted-foreground">
+          الإصدار الحالي: <span dir="ltr" className="text-foreground">v{APP_VERSION}</span>
+          {info?.latestVersion && (
+            <> · الأحدث: <span dir="ltr" className="text-foreground">v{info.latestVersion}</span></>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {info?.apkUrl && info.available && (
+            <button
+              onClick={() => launchApkInstall(info.apkUrl!)}
+              className="btn-primary text-xs"
+            >
+              تحميل APK
+            </button>
+          )}
+          <button
+            onClick={runCheck}
+            disabled={checking || !repo.includes("/")}
+            className="btn-secondary text-xs"
+          >
+            {checking ? "جارٍ الفحص..." : "فحص الآن"}
+          </button>
+        </div>
+      </div>
+      {info?.notes && info.available && (
+        <div className="rounded-lg border border-border bg-background/60 p-3 text-xs">
+          <p className="mb-1 font-semibold">ما الجديد:</p>
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-muted-foreground">{info.notes}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
