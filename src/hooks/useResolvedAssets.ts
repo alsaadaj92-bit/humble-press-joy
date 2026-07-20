@@ -22,6 +22,18 @@ export function useResolvedAssets(
       let changed = false;
       for (const asset of assets) {
         if (next.has(asset.id)) continue;
+        // Local blob wins — instant preview, no network, works without a provider.
+        if (asset.blob) {
+          next.set(asset.id, URL.createObjectURL(asset.blob));
+          changed = true;
+          continue;
+        }
+        // Device-scanned items only carry a base64 poster — use it as-is.
+        if (asset.provider === "device" && asset.posterDataUrl) {
+          next.set(asset.id, asset.posterDataUrl);
+          changed = true;
+          continue;
+        }
         try {
           const cfg = providers.get(asset.provider);
           const url = await resolveAssetUrl(asset, cfg);
