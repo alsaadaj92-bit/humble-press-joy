@@ -23,6 +23,7 @@ export function UploadFab() {
   const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
   const { active, activeConfig } = useProviders();
 
   const handleFiles = async (files: FileList | File[]) => {
