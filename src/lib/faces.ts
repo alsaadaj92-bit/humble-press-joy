@@ -188,7 +188,7 @@ export async function saveDetectedFaces(rows: FaceRow[]): Promise<void> {
   await photoDb.faces.bulkPut(rows);
 }
 
-interface FaceScanMeta {
+export interface FaceScanMeta {
   modelId: string;
   sourceStamp?: number;
   durationMs: number;
