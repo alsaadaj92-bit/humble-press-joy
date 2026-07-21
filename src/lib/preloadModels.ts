@@ -9,6 +9,7 @@
 // stores its trained data in IndexedDB). Subsequent launches skip network.
 
 import { toast } from "sonner";
+import { logDiag } from "./diagnostics";
 
 export type PreloadStage = "faces" | "clip" | "ocr";
 export interface PreloadEvent {
