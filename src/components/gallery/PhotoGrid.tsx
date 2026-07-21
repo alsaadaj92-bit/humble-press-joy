@@ -54,6 +54,7 @@ export function PhotoGrid({
   }, [photos]);
   const selectionMode = selection.size > 0;
   const lastClickRef = useRef<string | null>(null);
+  const lastOpenAtRef = useRef<number>(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
   return (
