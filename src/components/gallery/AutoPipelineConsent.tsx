@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 import { Sparkles, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getConsent, setConsent, backfillMissing } from "@/lib/autoPipeline";
 import { toast } from "sonner";
 
 /**
- * First-run dialog. Shown once per browser profile — if the user grants
- * consent, the AutoPipeline runs silently for every future upload and we
- * also kick off a backfill for any existing assets.
+ * Non-blocking bottom banner. Shown once per browser profile — if the user
+ * grants consent, the AutoPipeline runs silently for every future upload and
+ * we also kick off a backfill for any existing assets.
  */
 export function AutoPipelineConsent() {
   const [open, setOpen] = useState(false);
@@ -41,55 +33,52 @@ export function AutoPipelineConsent() {
   const deny = async () => {
     await setConsent("denied");
     setOpen(false);
-    toast.message("يمكنك تفعيلها لاحقاً من الإعدادات");
+    toast.message("يمكنك تفعيلها لاحقاً من الإعدادات", { duration: 3000 });
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            تفعيل الذكاء التلقائي المحلي
-          </DialogTitle>
-          <DialogDescription className="pt-2 text-right leading-relaxed">
-            بعد كل رفع، سنقوم تلقائياً وفي جهازك فقط بـ:
-          </DialogDescription>
-        </DialogHeader>
-
-        <ul className="space-y-2 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
-            <span>استخراج النصوص من الصور (OCR — عربي + إنجليزي)</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
-            <span>فهرسة دلالية للبحث بالوصف (CLIP)</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
-            <span>كشف الوجوه وتجميع الأشخاص</span>
-          </li>
-        </ul>
-
-        <div className="rounded-lg border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">
-          <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            كل شيء يعمل في المتصفح
+    <div
+      className="fixed inset-x-3 bottom-20 z-40 md:inset-x-auto md:right-6 md:bottom-6 md:max-w-md"
+      style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+      role="dialog"
+      aria-live="polite"
+    >
+      <div className="rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur">
+        <div className="flex items-start gap-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+            <Sparkles className="h-5 w-5" />
           </div>
-          لا تُرسل صورك أو نتائج المعالجة إلى أي خادم خارجي. الموافقة تُطلب
-          هذه المرة فقط — يمكنك إيقافها من الإعدادات في أي وقت.
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">تفعيل الذكاء التلقائي المحلي</p>
+              <button
+                onClick={deny}
+                aria-label="إغلاق"
+                className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              OCR عربي/إنجليزي، بحث دلالي (CLIP)، وكشف الوجوه — يعمل كله داخل جهازك.
+            </p>
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              لا يُرسل شيء لأي خادم خارجي.
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button size="sm" onClick={grant} className="flex-1">
+                <Sparkles className="ml-1.5 h-4 w-4" /> تفعيل
+              </Button>
+              <Button size="sm" variant="outline" onClick={deny}>
+                ليس الآن
+              </Button>
+            </div>
+          </div>
         </div>
-
-        <DialogFooter className="gap-2 sm:justify-start">
-          <Button onClick={grant} className="flex-1">
-            <Sparkles className="ml-2 h-4 w-4" /> تفعيل
-          </Button>
-          <Button variant="outline" onClick={deny}>
-            <X className="ml-2 h-4 w-4" /> ليس الآن
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
