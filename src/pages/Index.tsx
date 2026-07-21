@@ -297,6 +297,12 @@ const Index = () => {
 
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="right" className="w-72 p-0">
+          <VisuallyHidden>
+            <SheetHeader>
+              <SheetTitle>القائمة الرئيسية</SheetTitle>
+              <SheetDescription>تنقل بين أقسام المعرض</SheetDescription>
+            </SheetHeader>
+          </VisuallyHidden>
           <GallerySidebar
             embedded
             active={activeSection}
