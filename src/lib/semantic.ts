@@ -96,20 +96,24 @@ export function topK<T>(
 
 // -------- Embedding functions ---------------------------------------------
 export async function embedText(query: string): Promise<number[]> {
+  const t = mark();
   const { tokenizer, text } = await loadClip();
   const inputs = tokenizer([query], { padding: true, truncation: true });
   const out = await text(inputs);
-  const vec = Array.from(out.text_embeds.data as Float32Array);
-  return normalize(vec);
+  const vec = normalize(Array.from(out.text_embeds.data as Float32Array));
+  logAI("clip", "text embed", { ms: t(), dim: vec.length, q: query.slice(0, 60) });
+  return vec;
 }
 
 export async function embedImageFromUrl(url: string): Promise<number[]> {
+  const t = mark();
   const { processor, vision } = await loadClip();
   const image = await RawImage.read(url);
   const inputs = await processor(image);
   const out = await vision(inputs);
-  const vec = Array.from(out.image_embeds.data as Float32Array);
-  return normalize(vec);
+  const vec = normalize(Array.from(out.image_embeds.data as Float32Array));
+  logAI("clip", "image embed", { ms: t(), dim: vec.length });
+  return vec;
 }
 
 // -------- Persistent embedding cache --------------------------------------
