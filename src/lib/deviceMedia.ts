@@ -5,6 +5,7 @@ import { Filesystem } from "@capacitor/filesystem";
 import type { MediaAsset } from "./photoDb";
 import { photoDb } from "./photoDb";
 import { requestGalleryPermission } from "./native";
+import { logDiag } from "./diagnostics";
 
 interface DeviceMediaItem {
   identifier: string;
