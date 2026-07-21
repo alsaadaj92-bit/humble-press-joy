@@ -26,7 +26,9 @@ export function AutoPipelineConsent() {
     await setConsent("granted");
     setOpen(false);
     toast.success("تم تفعيل المعالجة التلقائية");
-    const n = await backfillMissing(100);
+    // Backfill everything, not just the most recent 100 — the pipeline is
+    // idempotent so a big number is safe.
+    const n = await backfillMissing(10000);
     if (n > 0) toast.message(`جاري معالجة ${n} صورة موجودة في الخلفية`);
   };
 
