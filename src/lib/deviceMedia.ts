@@ -76,53 +76,58 @@ export async function scanDeviceGallery(
       return n;
     }
 
-  const { medias } = await Media.getMedias({
-    quantity: max,
-    thumbnailWidth: 320,
-    thumbnailHeight: 320,
-    thumbnailQuality: 70,
-    types: "all",
-  });
+    const { medias } = await Media.getMedias({
+      quantity: max,
+      thumbnailWidth: 320,
+      thumbnailHeight: 320,
+      thumbnailQuality: 70,
+      types: "all",
+    });
 
-  const total = medias.length;
-  let inserted = 0;
+    const total = medias.length;
+    let inserted = 0;
 
-  for (let i = 0; i < medias.length; i++) {
-    const m = medias[i];
-    onProgress?.(i, total);
+    for (let i = 0; i < medias.length; i++) {
+      const m = medias[i];
+      onProgress?.(i, total);
 
-    const id = `device:${m.identifier}`;
-    const existing = await photoDb.assets.get(id);
-    if (existing) continue;
+      const id = `device:${m.identifier}`;
+      const existing = await photoDb.assets.get(id);
+      if (existing) continue;
 
-    const isVideo = typeof m.duration === "number" && m.duration > 0;
-    const dateTaken = new Date(m.creationDate).getTime() || Date.now();
+      const isVideo = typeof m.duration === "number" && m.duration > 0;
+      const dateTaken = new Date(m.creationDate).getTime() || Date.now();
 
-    const asset: MediaAsset = {
-      id,
-      provider: "device",
-      name: m.identifier.split("/").pop() ?? m.identifier,
-      size: 0,
-      mime: isVideo ? "video/*" : "image/*",
-      width: m.fullWidth,
-      height: m.fullHeight,
-      date: dateTaken,
-      createdAt: Date.now(),
-      kind: isVideo ? "video" : "image",
-      posterDataUrl: `data:image/jpeg;base64,${m.data}`,
-      deviceIdentifier: m.identifier,
-      ...(isVideo ? { duration: m.duration } : {}),
-      ...(m.location?.latitude && m.location?.longitude
-        ? { exif: { gps: { lat: m.location.latitude, lon: m.location.longitude }, dateTaken } }
-        : {}),
-    };
+      const asset: MediaAsset = {
+        id,
+        provider: "device",
+        name: m.identifier.split("/").pop() ?? m.identifier,
+        size: 0,
+        mime: isVideo ? "video/*" : "image/*",
+        width: m.fullWidth,
+        height: m.fullHeight,
+        date: dateTaken,
+        createdAt: Date.now(),
+        kind: isVideo ? "video" : "image",
+        posterDataUrl: `data:image/jpeg;base64,${m.data}`,
+        deviceIdentifier: m.identifier,
+        ...(isVideo ? { duration: m.duration } : {}),
+        ...(m.location?.latitude && m.location?.longitude
+          ? { exif: { gps: { lat: m.location.latitude, lon: m.location.longitude }, dateTaken } }
+          : {}),
+      };
 
-    await photoDb.assets.put(asset);
-    inserted++;
+      await photoDb.assets.put(asset);
+      inserted++;
+    }
+
+    onProgress?.(total, total);
+    logDiag("info", "scan", `scan complete — inserted ${inserted} new assets`);
+    return inserted;
+  } catch (err) {
+    logDiag("error", "scan", "device gallery scan failed", err);
+    throw err;
   }
-
-  onProgress?.(total, total);
-  return inserted;
 }
 
 async function scanAndroidGallery(
