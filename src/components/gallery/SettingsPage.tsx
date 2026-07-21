@@ -41,6 +41,7 @@ import {
   DEFAULT_TASKS,
   type AutoPipelineTasks,
   type ConsentState,
+  backfillMissing,
 } from "@/lib/autoPipeline";
 import {
   notificationsPermission,
