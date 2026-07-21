@@ -109,10 +109,17 @@ const GROUPS: NavGroup[] = [
 ];
 
 export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: SidebarProps) {
+  // Filter out stubs (not wired yet) and native-only items on web.
+  const isNativeApp = typeof (globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform === "function"
+    && (globalThis as { Capacitor: { isNativePlatform: () => boolean } }).Capacitor.isNativePlatform();
+  const groups = GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => !it.stub && (!it.nativeOnly || isNativeApp)),
+  })).filter((g) => g.items.length > 0);
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
+        "flex w-72 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
         !embedded && "hidden md:flex",
         embedded && "h-full w-full border-l-0",
       )}
