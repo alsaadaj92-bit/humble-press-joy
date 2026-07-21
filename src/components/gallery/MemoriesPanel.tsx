@@ -139,17 +139,72 @@ function StoryCard({ story, onOpen }: { story: MemoryStory; onOpen: () => void }
 
 function StoryViewer({ story, onClose }: { story: MemoryStory; onClose: () => void }) {
   const [i, setI] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const startX = useRef<number | null>(null);
+  const DURATION = 4500;
+
+  const prev = () => { setProgress(0); setI((v) => (v - 1 + story.photos.length) % story.photos.length); };
+  const next = () => { setProgress(0); setI((v) => (v + 1) % story.photos.length); };
+
+  // Auto-advance timer, updates the progress bar 30x/s.
+  useEffect(() => {
+    if (paused) return;
+    const start = Date.now() - (progress / 100) * DURATION;
+    const t = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      const p = Math.min(100, (elapsed / DURATION) * 100);
+      setProgress(p);
+      if (p >= 100) {
+        window.clearInterval(t);
+        next();
+      }
+    }, 33);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i, paused]);
+
+  // Keyboard nav
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") next();
+      else if (e.key === "ArrowRight") prev();
+      else if (e.key === " ") setPaused((p) => !p);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    setPaused(true);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startX.current == null) return;
+    setDragX(e.touches[0].clientX - startX.current);
+  };
+  const onTouchEnd = () => {
+    setPaused(false);
+    const dx = dragX;
+    setDragX(0);
+    startX.current = null;
+    if (Math.abs(dx) > 60) { dx > 0 ? prev() : next(); }
+  };
+
   const p = story.photos[i];
-  const prev = () => setI((v) => (v - 1 + story.photos.length) % story.photos.length);
-  const next = () => setI((v) => (v + 1) % story.photos.length);
+  const prevP = story.photos[(i - 1 + story.photos.length) % story.photos.length];
+  const nextP = story.photos[(i + 1) % story.photos.length];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col bg-black backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex items-center justify-between px-4 py-3 text-white"
+        className="flex items-center justify-between px-4 py-3 text-white safe-top"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
@@ -172,29 +227,72 @@ function StoryViewer({ story, onClose }: { story: MemoryStory; onClose: () => vo
         {story.photos.map((_, idx) => (
           <div key={idx} className="h-0.5 flex-1 overflow-hidden rounded bg-white/20">
             <div
-              className="h-full bg-white transition-all"
-              style={{ width: idx < i ? "100%" : idx === i ? "50%" : "0%" }}
+              className="h-full bg-white"
+              style={{
+                width: idx < i ? "100%" : idx === i ? `${progress}%` : "0%",
+                transition: idx === i ? "width 60ms linear" : "none",
+              }}
             />
           </div>
         ))}
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="relative flex flex-1 items-center justify-center overflow-hidden p-4"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseDown={() => setPaused(true)}
+        onMouseUp={() => setPaused(false)}
+      >
+        {/* Sliding track */}
+        <div
+          className="absolute inset-0 flex"
+          style={{
+            transform: `translateX(calc(${dragX}px))`,
+            transition: startX.current == null ? "transform 300ms cubic-bezier(.22,1,.36,1)" : "none",
+          }}
+        >
+          <div className="flex h-full w-full shrink-0 items-center justify-center" style={{ transform: "translateX(-100%)" }}>
+            <img src={fullSrc(prevP)} alt="" className="max-h-full max-w-full rounded-2xl object-contain opacity-90" />
+          </div>
+          <div className="flex h-full w-full shrink-0 items-center justify-center">
+            <img
+              key={p.id}
+              src={fullSrc(p)}
+              alt={p.name}
+              className="max-h-full max-w-full rounded-2xl object-contain animate-in fade-in zoom-in-95 duration-500"
+              style={{ animationFillMode: "both" }}
+            />
+          </div>
+          <div className="flex h-full w-full shrink-0 items-center justify-center" style={{ transform: "translateX(100%)" }}>
+            <img src={fullSrc(nextP)} alt="" className="max-h-full max-w-full rounded-2xl object-contain opacity-90" />
+          </div>
+        </div>
+
+        {/* Tap zones (mobile-style: right = back for RTL, left = forward) */}
         <button
-          onClick={prev}
-          className="absolute right-2 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          className="absolute inset-y-0 right-0 w-1/3"
+          onClick={(e) => { e.stopPropagation(); prev(); }}
+          aria-label="السابقة"
+        />
+        <button
+          className="absolute inset-y-0 left-0 w-1/3"
+          onClick={(e) => { e.stopPropagation(); next(); }}
+          aria-label="التالية"
+        />
+
+        <button
+          onClick={(e) => { e.stopPropagation(); prev(); }}
+          className="absolute right-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 md:grid"
           aria-label="السابقة"
         >
           <ChevronRight className="h-6 w-6" />
         </button>
-        <img
-          src={fullSrc(p)}
-          alt={p.name}
-          className="max-h-full max-w-full rounded-xl object-contain"
-        />
         <button
-          onClick={next}
-          className="absolute left-2 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          onClick={(e) => { e.stopPropagation(); next(); }}
+          className="absolute left-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 md:grid"
           aria-label="التالية"
         >
           <ChevronLeft className="h-6 w-6" />
