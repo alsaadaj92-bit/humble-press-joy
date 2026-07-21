@@ -8,7 +8,7 @@ export function UpdateBanner() {
   if (!info?.available || dismissed) return null;
 
   return (
-    <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-primary/30 bg-primary/15 px-3 py-2 text-sm backdrop-blur">
+    <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-primary/30 bg-primary/15 px-3 py-2 text-sm backdrop-blur" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}>
       <Sparkles className="h-4 w-4 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-foreground">

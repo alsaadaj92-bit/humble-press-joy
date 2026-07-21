@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { IdentityCard } from "./IdentityCard";
 import { EncryptionPanel } from "./EncryptionPanel";
 import { FaceSettingsPanel } from "./FaceSettingsPanel";
+import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { BackupPanel } from "./BackupPanel";
 import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { useProviders } from "@/hooks/useProviders";
@@ -130,6 +131,10 @@ export function SettingsPage({ onNavigate }: Props) {
 
       <Group title="تحديثات التطبيق (OTA)" icon={Zap}>
         <OtaSection />
+      </Group>
+
+      <Group title="التشخيصات وسجل الأخطاء" icon={Info}>
+        <DiagnosticsPanel />
       </Group>
 
       <Group title="حول التطبيق" icon={Info}>
