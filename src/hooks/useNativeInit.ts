@@ -14,6 +14,8 @@ import {
 } from "@/lib/native";
 import { runSyncCycle } from "@/lib/syncEngine";
 import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
+import { prefGet } from "@/lib/native";
+import { preloadInBackground } from "@/lib/preloadModels";
 
 /**
  * Native init:
@@ -44,12 +46,18 @@ export function useNativeInit() {
       void (async () => {
         try {
           if (!canScanDeviceGallery()) return;
-          const cam = await checkCameraPermission();
-          if (cam !== "granted") return; // wizard hasn't finished yet
+          // Don't gate on camera perm — the Media plugin has its own perm.
+          // If it's missing the call throws and we swallow silently.
           await scanDeviceGallery();
         } catch { /* ignore */ }
       })();
     };
+
+    // Preload on-device AI models if the user opted in via the wizard.
+    void (async () => {
+      const flag = await prefGet("lp:flag:aiPipeline");
+      if (flag === "1") preloadInBackground();
+    })();
 
     // First tick — wait a beat so wizard/permissions can settle.
     const t = window.setTimeout(runScan, 1200);
