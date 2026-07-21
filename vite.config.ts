@@ -113,6 +113,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __OTA_REPO__: JSON.stringify(process.env.GITHUB_REPOSITORY || process.env.VITE_OTA_REPO || ""),
   },
   resolve: {
     alias: {
