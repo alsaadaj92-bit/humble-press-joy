@@ -38,35 +38,38 @@ export async function preloadAiModels(
   // Faces — 3 tiny nets, ~2 MB total.
   try {
     emit({ stage: "faces", status: "start" });
+    logDiag("info", "preload", "loading face models");
     const { loadFaceModels } = await import("./faces");
     await loadFaceModels();
     emit({ stage: "faces", status: "done" });
   } catch (err) {
+    logDiag("error", "preload", "face models failed", err);
     emit({ stage: "faces", status: "error", message: String(err) });
   }
 
   // CLIP — ~90 MB, biggest one. Run in background; failures are non-fatal.
   try {
     emit({ stage: "clip", status: "start" });
+    logDiag("info", "preload", "loading CLIP model");
     const { loadClip } = await import("./semantic");
     await loadClip();
     emit({ stage: "clip", status: "done" });
   } catch (err) {
+    logDiag("error", "preload", "CLIP model failed", err);
     emit({ stage: "clip", status: "error", message: String(err) });
   }
 
   // OCR — Arabic + English trained data (~15 MB).
   try {
     emit({ stage: "ocr", status: "start" });
-    // Touch the module — the worker/langs download on first .recognize() call.
-    // We warm the worker here so the langs land in IndexedDB now.
+    logDiag("info", "preload", "priming OCR worker");
     const mod = await import("./ocr");
-    // Recognizing a tiny transparent pixel primes the worker + langs.
     const canvas = document.createElement("canvas");
     canvas.width = 8; canvas.height = 8;
     await mod.ocrImage(canvas);
     emit({ stage: "ocr", status: "done" });
   } catch (err) {
+    logDiag("error", "preload", "OCR primer failed", err);
     emit({ stage: "ocr", status: "error", message: String(err) });
   }
 
