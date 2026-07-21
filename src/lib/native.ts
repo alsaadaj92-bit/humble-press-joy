@@ -8,6 +8,7 @@ import { Share } from "@capacitor/share";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Preferences } from "@capacitor/preferences";
+import { logPerm } from "./diagnostics";
 
 export const isNative = () => Capacitor.isNativePlatform();
 export const platform = () => Capacitor.getPlatform(); // "ios" | "android" | "web"
@@ -57,25 +58,36 @@ export async function pickFromGallery(limit = 0): Promise<File[]> {
 
 export async function requestCameraPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "camera: request start");
   const res = await Camera.requestPermissions({ permissions: ["camera", "photos"] });
-  return res.camera === "granted" || res.photos === "granted";
+  const granted = res.camera === "granted" || res.photos === "granted";
+  logPerm("perm", `camera: ${granted ? "granted" : "denied"}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkCameraPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
   if (!isNative()) return "unknown";
   const res = await Camera.checkPermissions();
-  return (res.camera as never) ?? "prompt";
+  const state = (res.camera as never) ?? "prompt";
+  logPerm("perm", `camera check: ${state}`, res);
+  return state;
 }
 
 // ------- Full device gallery --------------------------------------------------
 export async function requestGalleryPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "gallery: request start");
   try {
     const res = await LocalGalleryMedia.requestGalleryPermissions();
-    return res.media === "granted";
-  } catch {
+    const granted = res.media === "granted";
+    logPerm("perm", `gallery: ${granted ? "granted" : res.media}`, res, granted ? "info" : "warn");
+    return granted;
+  } catch (err) {
+    logPerm("perm", "gallery: native plugin missing, fallback to Camera photos", err, "warn");
     const res = await Camera.requestPermissions({ permissions: ["photos"] });
-    return res.photos === "granted";
+    const granted = res.photos === "granted";
+    logPerm("perm", `gallery(fallback): ${granted ? "granted" : "denied"}`, res, granted ? "info" : "warn");
+    return granted;
   }
 }
 
@@ -83,7 +95,9 @@ export async function checkGalleryPermission(): Promise<"granted" | "denied" | "
   if (!isNative()) return "unknown";
   try {
     const res = await LocalGalleryMedia.checkGalleryPermissions();
-    return res.media === "prompt-with-rationale" ? "prompt" : (res.media as "granted" | "denied" | "prompt");
+    const state = res.media === "prompt-with-rationale" ? "prompt" : (res.media as "granted" | "denied" | "prompt");
+    logPerm("perm", `gallery check: ${state}`, res);
+    return state;
   } catch {
     try {
       const res = await Camera.checkPermissions();
