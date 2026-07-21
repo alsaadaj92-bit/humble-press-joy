@@ -40,8 +40,10 @@ interface NavItem {
   id: string;
   label: string;
   icon: typeof Images;
-  /** Feature isn't wired yet — show "قريباً" badge. */
+  /** Feature isn't wired yet — hide by default. */
   stub?: boolean;
+  /** Only meaningful on the native Android/iOS build. */
+  nativeOnly?: boolean;
 }
 
 interface NavGroup {
