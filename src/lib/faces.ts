@@ -15,7 +15,7 @@ import {
 import { photoDb, type FaceRow, type PersonRow } from "./photoDb";
 import { clusterFaces, type FaceLike, type Cluster } from "./faceCluster";
 import { faceModelId, getFaceSettings, type FaceProcessingMode } from "./faceSettings";
-import { logDiag } from "./diagnostics";
+import { logDiag, logAI, mark } from "./diagnostics";
 
 const WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -210,20 +210,29 @@ export async function detectFacesInImage(
 ): Promise<FaceRow[]> {
   const started = performance.now();
   const settings = await getFaceSettings();
+  const loadT = mark();
   await loadFaceModels();
+  logAI("faces", "models available", { ms: loadT(), mode: settings.mode });
   if (!detector || !embedder) return [];
+  const decodeT = mark();
   const { img, cleanup } = await loadImageForFaces(assetId, url);
+  logAI("faces", "image decoded", { ms: decodeT(), w: img.naturalWidth, h: img.naturalHeight });
   try {
+    const detT = mark();
     const det = detector.detect(img);
+    const detMs = detT();
     const now = Date.now();
     const modelId = faceModelId(settings.mode);
     const rows: FaceRow[] = [];
+    const embedTimes: number[] = [];
     for (let i = 0; i < det.detections.length; i++) {
       const d = det.detections[i];
       const bb = d.boundingBox;
       if (!bb) continue;
       const crop = cropToCanvas(img, bb.originX, bb.originY, bb.width, bb.height);
+      const embT = mark();
       const emb = extractEmbedding(embedder.embed(crop));
+      embedTimes.push(embT());
       if (!emb.length) continue;
       rows.push({
         id: `${assetId}:${i}`,
@@ -238,6 +247,11 @@ export async function detectFacesInImage(
     const durationMs = Math.round(performance.now() - started);
     for (const row of rows) row.durationMs = durationMs;
     await markFaceScanned(assetId, { modelId, sourceStamp, durationMs, faces: rows.length });
+    logAI("faces", "detect done", {
+      assetId, totalMs: durationMs, detectMs: detMs, faces: rows.length,
+      avgEmbedMs: embedTimes.length ? Math.round(embedTimes.reduce((a, b) => a + b, 0) / embedTimes.length) : 0,
+      modelId,
+    });
     return rows;
   } finally {
     cleanup();

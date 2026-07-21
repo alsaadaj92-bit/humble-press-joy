@@ -5,6 +5,7 @@
 
 import { createWorker, type Worker } from "tesseract.js";
 import { photoDb, type OcrRow } from "./photoDb";
+import { logAI, mark } from "./diagnostics";
 
 const LANG = "ara+eng";
 let workerPromise: Promise<Worker> | null = null;
@@ -12,8 +13,17 @@ let workerPromise: Promise<Worker> | null = null;
 async function getWorker(): Promise<Worker> {
   if (!workerPromise) {
     workerPromise = (async () => {
-      const w = await createWorker(LANG);
-      return w;
+      const t = mark();
+      logAI("ocr", "worker: create start", { lang: LANG });
+      try {
+        const w = await createWorker(LANG);
+        logAI("ocr", "worker: ready", { lang: LANG, ms: t() });
+        return w;
+      } catch (err) {
+        logAI("ocr", "worker: create failed", err, "error");
+        workerPromise = null;
+        throw err;
+      }
     })();
   }
   return workerPromise;
@@ -25,6 +35,7 @@ export async function disposeOcr() {
     const w = await workerPromise;
     await w.terminate();
     workerPromise = null;
+    logAI("ocr", "worker: terminated");
   }
 }
 
@@ -35,11 +46,17 @@ export interface OcrResult {
 
 export async function ocrImage(source: string | Blob | HTMLImageElement | HTMLCanvasElement): Promise<OcrResult> {
   const w = await getWorker();
-  const { data } = await w.recognize(source as never);
-  return {
-    text: (data.text ?? "").trim(),
-    confidence: Math.round(data.confidence ?? 0),
-  };
+  const t = mark();
+  try {
+    const { data } = await w.recognize(source as never);
+    const text = (data.text ?? "").trim();
+    const confidence = Math.round(data.confidence ?? 0);
+    logAI("ocr", "recognize done", { ms: t(), chars: text.length, confidence });
+    return { text, confidence };
+  } catch (err) {
+    logAI("ocr", "recognize failed", err, "error");
+    throw err;
+  }
 }
 
 export async function saveOcr(id: string, result: OcrResult): Promise<OcrRow> {

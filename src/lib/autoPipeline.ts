@@ -20,6 +20,7 @@ import { ocrImage, saveOcr } from "@/lib/ocr";
 import { embedImageFromUrl, putEmbedding, getEmbedding } from "@/lib/semantic";
 import { detectFacesInImage, replaceDetectedFaces, shouldScanFaces } from "@/lib/faces";
 import { faceSourceStamp } from "@/lib/faceSettings";
+import { logAI, mark } from "@/lib/diagnostics";
 
 export const CONSENT_KEY = "autoPipelineConsent";
 export const TASKS_KEY = "autoPipelineTasks";
@@ -127,11 +128,13 @@ async function drain() {
       status.currentAssetId = id;
       emit();
       try {
+        const t = mark();
         await runFor(id);
         status.processed++;
+        logAI("pipeline", "asset done", { assetId: id, ms: t() });
       } catch (e) {
         status.failed++;
-        console.warn("[autoPipeline] failed", id, e);
+        logAI("pipeline", "asset failed", { assetId: id, err: String(e) }, "error");
       }
       enqueued.delete(id);
     }
@@ -159,8 +162,9 @@ async function runFor(assetId: string) {
   let url: string;
   try {
     url = await resolveAssetUrl(asset, cfg);
-  } catch {
-    return; // provider offline — try later
+  } catch (e) {
+    logAI("pipeline", "provider offline, skip", { assetId, err: String(e) }, "warn");
+    return;
   }
 
   if (tasks.ocr) {
@@ -173,7 +177,7 @@ async function runFor(assetId: string) {
         if (res.text.trim().length) await saveOcr(assetId, res);
       }
     } catch (e) {
-      console.warn("[autoPipeline:ocr]", e);
+      logAI("pipeline", "ocr task failed", { assetId, err: String(e) }, "warn");
     }
   }
 
@@ -186,7 +190,7 @@ async function runFor(assetId: string) {
         await putEmbedding(assetId, vec);
       }
     } catch (e) {
-      console.warn("[autoPipeline:embed]", e);
+      logAI("pipeline", "embed task failed", { assetId, err: String(e) }, "warn");
     }
   }
 
@@ -200,7 +204,7 @@ async function runFor(assetId: string) {
         await replaceDetectedFaces(assetId, rows);
       }
     } catch (e) {
-      console.warn("[autoPipeline:faces]", e);
+      logAI("pipeline", "faces task failed", { assetId, err: String(e) }, "warn");
     }
   }
 }

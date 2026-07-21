@@ -5,7 +5,7 @@ import { Filesystem } from "@capacitor/filesystem";
 import type { MediaAsset } from "./photoDb";
 import { photoDb } from "./photoDb";
 import { requestGalleryPermission } from "./native";
-import { logDiag } from "./diagnostics";
+import { logDiag, logNative, logIdb, mark } from "./diagnostics";
 
 interface DeviceMediaItem {
   identifier: string;
@@ -63,16 +63,18 @@ export async function scanDeviceGallery(
 ): Promise<number> {
   if (!canScanDeviceGallery()) return 0;
   const platform = Capacitor.getPlatform();
-  logDiag("info", "scan", `starting device gallery scan (${platform})`);
+  const t = mark();
+  logNative("scan", `device gallery scan start (${platform})`);
   try {
     if (platform === "android") {
       const granted = await requestGalleryPermission().catch((e) => {
-        logDiag("warn", "scan", "gallery permission request failed", e);
+        logNative("scan", "gallery permission request failed", e);
         return false;
       });
-      if (!granted) logDiag("warn", "scan", "gallery permission not granted — scan may be empty");
+      if (!granted) logNative("scan", "gallery permission not granted — scan may be empty");
       const n = await scanAndroidGallery(onProgress, max);
-      logDiag("info", "scan", `scan complete — inserted ${n} new assets`);
+      logNative("scan", `scan complete`, { ms: t(), inserted: n });
+      if (n > 0) logIdb("assets", `inserted ${n} device assets`);
       return n;
     }
 
@@ -122,10 +124,11 @@ export async function scanDeviceGallery(
     }
 
     onProgress?.(total, total);
-    logDiag("info", "scan", `scan complete — inserted ${inserted} new assets`);
+    logNative("scan", `scan complete`, { ms: t(), inserted, total });
+    if (inserted > 0) logIdb("assets", `inserted ${inserted} device assets`);
     return inserted;
   } catch (err) {
-    logDiag("error", "scan", "device gallery scan failed", err);
+    logDiag("error", "scan", "device gallery scan failed", err, "error");
     throw err;
   }
 }

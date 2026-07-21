@@ -8,6 +8,7 @@ import { Share } from "@capacitor/share";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Preferences } from "@capacitor/preferences";
+import { logPerm } from "./diagnostics";
 
 export const isNative = () => Capacitor.isNativePlatform();
 export const platform = () => Capacitor.getPlatform(); // "ios" | "android" | "web"
@@ -57,25 +58,36 @@ export async function pickFromGallery(limit = 0): Promise<File[]> {
 
 export async function requestCameraPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "camera: request start");
   const res = await Camera.requestPermissions({ permissions: ["camera", "photos"] });
-  return res.camera === "granted" || res.photos === "granted";
+  const granted = res.camera === "granted" || res.photos === "granted";
+  logPerm("perm", `camera: ${granted ? "granted" : "denied"}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkCameraPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
   if (!isNative()) return "unknown";
   const res = await Camera.checkPermissions();
-  return (res.camera as never) ?? "prompt";
+  const state = (res.camera as never) ?? "prompt";
+  logPerm("perm", `camera check: ${state}`, res);
+  return state;
 }
 
 // ------- Full device gallery --------------------------------------------------
 export async function requestGalleryPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "gallery: request start");
   try {
     const res = await LocalGalleryMedia.requestGalleryPermissions();
-    return res.media === "granted";
-  } catch {
+    const granted = res.media === "granted";
+    logPerm("perm", `gallery: ${granted ? "granted" : res.media}`, res, granted ? "info" : "warn");
+    return granted;
+  } catch (err) {
+    logPerm("perm", "gallery: native plugin missing, fallback to Camera photos", err, "warn");
     const res = await Camera.requestPermissions({ permissions: ["photos"] });
-    return res.photos === "granted";
+    const granted = res.photos === "granted";
+    logPerm("perm", `gallery(fallback): ${granted ? "granted" : "denied"}`, res, granted ? "info" : "warn");
+    return granted;
   }
 }
 
@@ -83,7 +95,9 @@ export async function checkGalleryPermission(): Promise<"granted" | "denied" | "
   if (!isNative()) return "unknown";
   try {
     const res = await LocalGalleryMedia.checkGalleryPermissions();
-    return res.media === "prompt-with-rationale" ? "prompt" : (res.media as "granted" | "denied" | "prompt");
+    const state = res.media === "prompt-with-rationale" ? "prompt" : (res.media as "granted" | "denied" | "prompt");
+    logPerm("perm", `gallery check: ${state}`, res);
+    return state;
   } catch {
     try {
       const res = await Camera.checkPermissions();
@@ -96,11 +110,18 @@ export async function checkGalleryPermission(): Promise<"granted" | "denied" | "
 
 // ------- Local notifications --------------------------------------------------
 export async function requestNotifPermission(): Promise<boolean> {
-  if (!isNative()) return "Notification" in globalThis
-    ? (await Notification.requestPermission()) === "granted"
-    : false;
+  logPerm("perm", "notif: request start");
+  if (!isNative()) {
+    const granted = "Notification" in globalThis
+      ? (await Notification.requestPermission()) === "granted"
+      : false;
+    logPerm("perm", `notif(web): ${granted ? "granted" : "denied"}`, undefined, granted ? "info" : "warn");
+    return granted;
+  }
   const res: LNStatus = await LocalNotifications.requestPermissions();
-  return res.display === "granted";
+  const granted = res.display === "granted";
+  logPerm("perm", `notif: ${granted ? "granted" : res.display}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkNotifPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
@@ -109,7 +130,9 @@ export async function checkNotifPermission(): Promise<"granted" | "denied" | "pr
     return Notification.permission as "granted" | "denied" | "prompt";
   }
   const res = await LocalNotifications.checkPermissions();
-  return (res.display as never) ?? "prompt";
+  const state = (res.display as never) ?? "prompt";
+  logPerm("perm", `notif check: ${state}`, res);
+  return state;
 }
 
 let notifCounter = 1;
@@ -138,14 +161,19 @@ export async function notify(title: string, body: string) {
 // ------- Geolocation ---------------------------------------------------------
 export async function requestLocationPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "location: request start");
   const res = await Geolocation.requestPermissions();
-  return res.location === "granted";
+  const granted = res.location === "granted";
+  logPerm("perm", `location: ${granted ? "granted" : res.location}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkLocationPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
   if (!isNative()) return "unknown";
   const res = await Geolocation.checkPermissions();
-  return (res.location as never) ?? "prompt";
+  const state = (res.location as never) ?? "prompt";
+  logPerm("perm", `location check: ${state}`, res);
+  return state;
 }
 
 // ------- Native share --------------------------------------------------------

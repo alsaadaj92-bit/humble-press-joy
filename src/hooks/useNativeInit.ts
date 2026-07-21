@@ -16,6 +16,7 @@ import { runSyncCycle } from "@/lib/syncEngine";
 import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
 import { prefGet } from "@/lib/native";
 import { preloadInBackground } from "@/lib/preloadModels";
+import { logNative, logTimeline } from "@/lib/diagnostics";
 
 /**
  * Native init:
@@ -28,6 +29,7 @@ import { preloadInBackground } from "@/lib/preloadModels";
 export function useNativeInit() {
   useEffect(() => {
     if (!isNative()) return;
+    logTimeline("native", "init begin");
 
     void (async () => {
       try {
@@ -67,12 +69,14 @@ export function useNativeInit() {
     };
 
     const appSub = App.addListener("appStateChange", (s) => {
+      logNative("app", `state ${s.isActive ? "active" : "background"}`);
       if (s.isActive) {
         runSync();
         runScan();
       }
     });
     const netSub = Network.addListener("networkStatusChange", (s) => {
+      logNative("network", `${s.connected ? "online" : "offline"} (${s.connectionType})`);
       if (s.connected) runSync();
     });
 
