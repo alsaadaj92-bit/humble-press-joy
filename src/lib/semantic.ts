@@ -11,6 +11,7 @@ import {
   env,
 } from "@huggingface/transformers";
 import { photoDb } from "./photoDb";
+import { logAI, mark } from "./diagnostics";
 
 export const CLIP_MODEL_ID = "Xenova/clip-vit-base-patch32";
 
@@ -31,14 +32,30 @@ export function loadClip(
 ): Promise<ClipBundle> {
   if (bundlePromise) return bundlePromise;
   bundlePromise = (async () => {
-    const opts: any = { progress_callback: onProgress };
-    const [processor, tokenizer, vision, text] = await Promise.all([
-      AutoProcessor.from_pretrained(CLIP_MODEL_ID, opts),
-      AutoTokenizer.from_pretrained(CLIP_MODEL_ID, opts),
-      CLIPVisionModelWithProjection.from_pretrained(CLIP_MODEL_ID, opts),
-      CLIPTextModelWithProjection.from_pretrained(CLIP_MODEL_ID, opts),
-    ]);
-    return { processor, tokenizer, vision, text };
+    const t = mark();
+    logAI("clip", "load start", { model: CLIP_MODEL_ID });
+    const opts: any = {
+      progress_callback: (p: { status: string; progress?: number; file?: string }) => {
+        onProgress?.(p);
+        if (p.status === "progress" && typeof p.progress === "number" && p.progress % 25 < 1) {
+          logAI("clip", `download ${p.file ?? ""}`, { progress: Math.round(p.progress) });
+        }
+      },
+    };
+    try {
+      const [processor, tokenizer, vision, text] = await Promise.all([
+        AutoProcessor.from_pretrained(CLIP_MODEL_ID, opts),
+        AutoTokenizer.from_pretrained(CLIP_MODEL_ID, opts),
+        CLIPVisionModelWithProjection.from_pretrained(CLIP_MODEL_ID, opts),
+        CLIPTextModelWithProjection.from_pretrained(CLIP_MODEL_ID, opts),
+      ]);
+      logAI("clip", "load ready", { ms: t() });
+      return { processor, tokenizer, vision, text };
+    } catch (err) {
+      logAI("clip", "load failed", err, "error");
+      bundlePromise = null;
+      throw err;
+    }
   })();
   return bundlePromise;
 }
