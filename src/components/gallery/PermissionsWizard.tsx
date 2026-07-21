@@ -11,6 +11,7 @@ import {
   requestNotifPermission,
 } from "@/lib/native";
 import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
+import { preloadInBackground } from "@/lib/preloadModels";
 
 const KEY = "lp:wizard:done";
 
@@ -73,6 +74,8 @@ export function PermissionsWizard() {
       if (flags.autoScan && canScanDeviceGallery()) {
         void scanDeviceGallery().catch(() => undefined);
       }
+      // Prime AI models (faces / CLIP / OCR) so they work offline afterwards.
+      if (flags.aiPipeline) preloadInBackground();
     } finally {
       setBusy(false);
       setOpen(false);
