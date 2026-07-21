@@ -32,7 +32,7 @@ export interface DiagEntry {
   category?: DiagCategory;
 }
 
-const BUFFER_MAX = 2000;
+const BUFFER_MAX = 5000;
 const KV_KEY = "diagnostics:log";
 const KV_ENV_KEY = "diagnostics:env";
 const buffer: DiagEntry[] = [];
@@ -302,10 +302,15 @@ export function installGlobalDiagHandlers() {
     const label = t.getAttribute("aria-label") || t.getAttribute("title") || (t.textContent || "").trim().slice(0, 40);
     return `${tag}${id}${cls}${label ? ` "${label}"` : ""}`;
   };
+  // Dedupe pointerdown + synthetic click so a single tap doesn't consume two
+  // ring-buffer slots and starve AI/pipeline entries.
+  let lastPointerAt = 0;
   window.addEventListener("pointerdown", (e) => {
+    lastPointerAt = Date.now();
     logTouch("pointer", `${e.pointerType} @(${Math.round(e.clientX)},${Math.round(e.clientY)})`, describeTarget(e.target));
   }, { passive: true, capture: true });
   window.addEventListener("click", (e) => {
+    if (Date.now() - lastPointerAt < 800) return;
     logTouch("click", `@(${Math.round(e.clientX)},${Math.round(e.clientY)})`, describeTarget(e.target));
   }, { capture: true });
 
