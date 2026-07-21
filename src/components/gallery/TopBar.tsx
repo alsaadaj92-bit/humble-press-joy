@@ -45,7 +45,7 @@ export function TopBar({
   const stub = (label: string) => toast.message(`${label} — قريباً`);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/85 px-2 py-2 backdrop-blur md:px-4">
+    <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/85 px-2 py-2 backdrop-blur md:px-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}>
       <button
         className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
         aria-label="القائمة"
