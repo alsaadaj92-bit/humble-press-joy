@@ -29,7 +29,7 @@ import { logNative, logTimeline } from "@/lib/diagnostics";
 export function useNativeInit() {
   useEffect(() => {
     if (!isNative()) return;
-    logTimeline("native init: begin");
+    logTimeline("native", "init begin");
 
     void (async () => {
       try {
