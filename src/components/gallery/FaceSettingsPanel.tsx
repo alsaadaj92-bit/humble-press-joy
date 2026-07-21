@@ -16,6 +16,7 @@ import {
 import { photoDb } from "@/lib/photoDb";
 import { backfillMissing } from "@/lib/autoPipeline";
 import { cn } from "@/lib/utils";
+import { confirmDialog } from "@/lib/confirmDialog";
 
 /**
  * Face pipeline control surface — mode (GPU/CPU), preview toggle,
@@ -54,7 +55,7 @@ export function FaceSettingsPanel() {
 
   const reindex = async () => {
     if (reindexing) return;
-    if (!confirm("سيتم إعادة فحص جميع الصور بنموذج الوجوه الحالي. متابعة؟")) return;
+    if (!(await confirmDialog({ title: "إعادة فهرسة الوجوه", message: "سيتم إعادة فحص جميع الصور بنموذج الوجوه الحالي. متابعة؟" }))) return;
     setReindexing(true);
     try {
       // Force face-scan recompute by wiping cache markers only.

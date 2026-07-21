@@ -12,6 +12,7 @@ import {
 } from "@/lib/lockedFolder";
 import { useLockedFolder } from "@/hooks/useLockedFolder";
 import { PhotoGrid } from "./PhotoGrid";
+import { confirmDialog } from "@/lib/confirmDialog";
 
 interface Props {
   photos: MockPhoto[];              // full library (already excludes trashed)
@@ -112,7 +113,7 @@ export function LockedFolderPanel({ photos, states, onOpen }: Props) {
         </button>
         <button
           onClick={async () => {
-            if (!confirm("سيتم مسح الرمز وفك قفل كل الصور. متابعة؟")) return;
+            if (!(await confirmDialog({ title: "إعادة ضبط المجلد المؤمَّن", message: "سيتم مسح الرمز وفك قفل كل الصور. متابعة؟", destructive: true }))) return;
             await resetLockedFolder();
             setHasPin(false);
             toast.success("تمت إعادة الضبط");

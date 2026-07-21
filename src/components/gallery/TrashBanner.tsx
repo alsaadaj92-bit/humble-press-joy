@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Trash2, RotateCcw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { confirmDialog } from "@/lib/confirmDialog";
 import { purgeIds, trashInfo, formatRemaining } from "@/lib/trash";
 import type { PhotoState } from "@/lib/photoDb";
 import type { MockPhoto } from "@/lib/mockPhotos";
@@ -32,7 +33,7 @@ export function TrashBanner({ photos, states, onRestoreAll }: Props) {
   if (!stats.ids.length) return null;
 
   const emptyAll = async () => {
-    if (!confirm(`سيتم حذف ${stats.ids.length} عنصر نهائياً. متابعة؟`)) return;
+    if (!(await confirmDialog({ title: "إفراغ سلة المحذوفات", message: `سيتم حذف ${stats.ids.length} عنصر نهائياً. متابعة؟`, destructive: true, confirmText: "حذف نهائي" }))) return;
     setBusy(true);
     try {
       await purgeIds(stats.ids);
