@@ -110,8 +110,8 @@ const GROUPS: NavGroup[] = [
 
 export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: SidebarProps) {
   // Filter out stubs (not wired yet) and native-only items on web.
-  const isNativeApp = typeof (globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform === "function"
-    && (globalThis as { Capacitor: { isNativePlatform: () => boolean } }).Capacitor.isNativePlatform();
+  const cap = (globalThis as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  const isNativeApp = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform();
   const groups = GROUPS.map((g) => ({
     ...g,
     items: g.items.filter((it) => !it.stub && (!it.nativeOnly || isNativeApp)),
