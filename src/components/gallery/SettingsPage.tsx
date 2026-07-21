@@ -458,6 +458,25 @@ function AutoPipelineSection() {
               />
             }
           />
+          <div className="mx-3 h-px bg-border/60" />
+          <div className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm font-medium">معالجة جميع الصور الآن</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                أعد تشغيل OCR/CLIP/الوجوه على كل الصور غير المفهرسة.
+              </p>
+            </div>
+            <button
+              className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
+              onClick={async () => {
+                const n = await backfillMissing(10000);
+                const { toast } = await import("sonner");
+                toast.message(n > 0 ? `تمّت جدولة ${n} صورة` : "لا يوجد صور جديدة للمعالجة");
+              }}
+            >
+              تشغيل
+            </button>
+          </div>
         </>
       )}
     </div>
