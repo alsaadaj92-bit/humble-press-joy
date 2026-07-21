@@ -13,7 +13,9 @@ export interface MockPhoto {
   /** Overrides picsum full-size URL when present. */
   fullSrc?: string;
   /** Which storage provider produced this item, if any. */
-  provider?: "telegram" | "localServer" | "fileSystem";
+  provider?: "telegram" | "localServer" | "fileSystem" | "device";
+  size?: number;
+  createdAt?: number;
   /** Media kind — defaults to image. */
   kind?: "image" | "video";
   /** Video duration in seconds (when kind === "video"). */

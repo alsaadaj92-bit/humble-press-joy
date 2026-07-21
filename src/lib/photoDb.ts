@@ -173,10 +173,13 @@ export interface EmbeddingRow {
 export interface FaceRow {
   id: string;              // `${assetId}:${index}`
   assetId: string;
-  descriptor: number[];    // 128-D unit vector from face-api
+  descriptor: number[];    // MediaPipe image-embedder descriptor (local only)
   box: { x: number; y: number; width: number; height: number };
   personId?: string;
   detectedAt: number;
+  modelId?: string;
+  sourceStamp?: number;
+  durationMs?: number;
 }
 
 export interface PersonRow {
@@ -301,6 +304,20 @@ class PhotoDatabase extends Dexie {
       albumMembers: "id, albumId, assetId, addedAt",
       embeddings: "id, modelId, updatedAt",
       faces: "id, assetId, personId, detectedAt",
+      persons: "id, updatedAt, hidden",
+      ocr: "id, updatedAt",
+    });
+    this.version(11).stores({
+      states: "id, favorite, archived, trashedAt, importedAt, locked",
+      providers: "kind, configured",
+      assets: "id, provider, date, createdAt",
+      kv: "key",
+      topicRules: "id, priority, kind",
+      syncJobs: "id, status, createdAt, updatedAt",
+      albums: "id, kind, key, updatedAt",
+      albumMembers: "id, albumId, assetId, addedAt",
+      embeddings: "id, modelId, updatedAt",
+      faces: "id, assetId, personId, detectedAt, modelId, sourceStamp",
       persons: "id, updatedAt, hidden",
       ocr: "id, updatedAt",
     });
