@@ -57,7 +57,7 @@ export function PhotoGrid({
   const rootRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={rootRef} dir="rtl" className="relative w-full space-y-6">
+    <div ref={rootRef} className="relative w-full space-y-6">
 
       {groups.map((group) => {
         const first = group.items[0];
