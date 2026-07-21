@@ -27,10 +27,9 @@ export function OcrPanel({ photos, onOpen }: Props) {
 
   useEffect(() => {
     load();
-    return () => {
-      // release worker when panel unmounts
-      disposeOcr().catch(() => {});
-    };
+    // Keep the Tesseract worker alive across tab switches so background
+    // AutoPipeline scans don't get killed mid-run. It's released when the
+    // page unloads.
   }, []);
 
   const imagePhotos = useMemo(
