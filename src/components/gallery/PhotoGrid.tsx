@@ -67,7 +67,7 @@ export function PhotoGrid({
           <h2 className="sticky top-0 z-10 -mx-1 mb-1 bg-background/95 px-2 py-2 text-[13px] font-medium text-foreground/90 shadow-sm shadow-black/40 backdrop-blur">
             {group.label}
           </h2>
-          <div className={cn("masonry gap-0.5 sm:gap-1", colClasses)}>
+          <div className={cn("masonry w-full gap-0.5 sm:gap-1", colClasses)}>
 
             {group.items.map((photo) => {
               const idx = indexOf.get(photo.id)!;
