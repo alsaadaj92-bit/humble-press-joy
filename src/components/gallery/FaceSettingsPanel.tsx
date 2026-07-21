@@ -27,7 +27,10 @@ export function FaceSettingsPanel() {
   const [stats, setStats] = useState({ scanned: 0, faces: 0, averageMs: 0 });
   const [reindexing, setReindexing] = useState(false);
 
-  useEffect(() => subscribeFaceModelStatus(setStatus), []);
+  useEffect(() => {
+    const unsub = subscribeFaceModelStatus(setStatus);
+    return () => { unsub(); };
+  }, []);
 
   useEffect(() => {
     let alive = true;
