@@ -50,7 +50,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Mirrors Google Photos' primary IA: Photos → Explore → Sharing → Library.
+// Mirrors Google Photos' primary IA: Photos → Sharing → Library (with Explore nested).
 const GROUPS: NavGroup[] = [
   {
     id: "main",
@@ -58,17 +58,6 @@ const GROUPS: NavGroup[] = [
       { id: "photos", label: "الصور", icon: Images },
       { id: "memories", label: "الذكريات", icon: Sparkles },
       { id: "sharing", label: "المشاركة", icon: Share2, stub: true },
-    ],
-  },
-  {
-    id: "explore",
-    label: "استكشاف",
-    items: [
-      { id: "people", label: "الأشخاص والحيوانات", icon: UserRound },
-      { id: "places", label: "الأماكن", icon: MapPin },
-      { id: "things", label: "الأشياء", icon: Compass, stub: true },
-      { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
-      { id: "ocr", label: "قراءة النصوص", icon: ScanText },
     ],
   },
   {
@@ -83,7 +72,6 @@ const GROUPS: NavGroup[] = [
       { id: "eraser", label: "الممحاة السحرية", icon: Wrench },
       { id: "live-albums", label: "ألبومات حية", icon: Sparkles },
     ],
-
   },
   {
     id: "library",
@@ -91,6 +79,11 @@ const GROUPS: NavGroup[] = [
     items: [
       { id: "library", label: "نظرة عامة", icon: LibraryBig },
       { id: "albums", label: "الألبومات", icon: LibraryBig },
+      { id: "people", label: "الأشخاص والحيوانات", icon: UserRound },
+      { id: "places", label: "الأماكن", icon: MapPin },
+      { id: "things", label: "الأشياء", icon: Compass, stub: true },
+      { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
+      { id: "ocr", label: "قراءة النصوص", icon: ScanText },
       { id: "favorites", label: "المفضلة", icon: Heart },
       { id: "starred", label: "المميّزة بنجمة", icon: Star, stub: true },
       { id: "duplicates", label: "التكرارات", icon: Copy },
@@ -106,8 +99,8 @@ const GROUPS: NavGroup[] = [
       { id: "providers", label: "مزودو التخزين", icon: Cloud },
       { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
       { id: "partner", label: "الشريك", icon: Users, stub: true },
-      { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true },
-      { id: "permissions", label: "الأذونات (تطبيق أصلي)", icon: Lock },
+      { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true, nativeOnly: true },
+      { id: "permissions", label: "الأذونات (تطبيق أصلي)", icon: Lock, nativeOnly: true },
       { id: "settings", label: "الإعدادات", icon: Settings },
     ],
   },
