@@ -45,7 +45,7 @@ import {
   requestNotificationPermission,
 } from "@/lib/notifications";
 import { photoDb } from "@/lib/photoDb";
-import { APP_VERSION, getRepo, setRepo, checkForUpdate, launchApkInstall, type UpdateInfo } from "@/lib/ota";
+import { APP_VERSION, checkForUpdate, launchApkInstall, type UpdateInfo } from "@/lib/ota";
 import { cn } from "@/lib/utils";
 
 
