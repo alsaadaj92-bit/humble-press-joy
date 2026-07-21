@@ -44,22 +44,46 @@ export interface OcrResult {
   confidence: number;
 }
 
+/**
+ * Strip garbage glyphs and stray punctuation that Tesseract emits on noisy
+ * photos (©, ¥, i», random symbols). Keeps Arabic, Latin, digits, and basic
+ * punctuation so real text passes through untouched.
+ */
+export function sanitizeOcrText(raw: string): string {
+  return raw
+    .replace(/[^\p{L}\p{N}\s.,؟?!،:'"\-@#/()]/gu, " ")
+    .replace(/\b[^\s]{1}\b/g, " ") // drop lone-character noise
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Consider text meaningful only if it has >3 word-like tokens of length >=2. */
+export function isMeaningfulOcr(text: string): boolean {
+  const tokens = text.split(/\s+/).filter((t) => t.length >= 2);
+  return tokens.length > 3;
+}
+
 export async function ocrImage(source: string | Blob | HTMLImageElement | HTMLCanvasElement): Promise<OcrResult> {
   const w = await getWorker();
   const t = mark();
   try {
     const { data } = await w.recognize(source as never);
-    const text = (data.text ?? "").trim();
+    const cleaned = sanitizeOcrText(data.text ?? "");
     const confidence = Math.round(data.confidence ?? 0);
-    logAI("ocr", "recognize done", { ms: t(), chars: text.length, confidence });
-    return { text, confidence };
+    logAI("ocr", "recognize done", { ms: t(), chars: cleaned.length, confidence });
+    return { text: cleaned, confidence };
   } catch (err) {
     logAI("ocr", "recognize failed", err, "error");
     throw err;
   }
 }
 
-export async function saveOcr(id: string, result: OcrResult): Promise<OcrRow> {
+export async function saveOcr(id: string, result: OcrResult): Promise<OcrRow | null> {
+  // Skip DB writes for junk output — keeps search index clean.
+  if (!isMeaningfulOcr(result.text)) {
+    logAI("ocr", "skip save (noise)", { id, chars: result.text.length });
+    return null;
+  }
   const row: OcrRow = {
     id,
     text: result.text,
