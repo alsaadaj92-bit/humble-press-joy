@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { IdentityCard } from "./IdentityCard";
 import { EncryptionPanel } from "./EncryptionPanel";
+import { FaceSettingsPanel } from "./FaceSettingsPanel";
 import { BackupPanel } from "./BackupPanel";
 import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { useProviders } from "@/hooks/useProviders";
@@ -109,6 +110,10 @@ export function SettingsPage({ onNavigate }: Props) {
 
       <Group title="الذكاء التلقائي المحلي" icon={Sparkles}>
         <AutoPipelineSection />
+      </Group>
+
+      <Group title="التعرّف على الوجوه" icon={UserRound}>
+        <FaceSettingsPanel />
       </Group>
 
       <Group title="الإشعارات" icon={BellRing}>
