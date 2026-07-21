@@ -133,6 +133,10 @@ export function SettingsPage({ onNavigate }: Props) {
         <OtaSection />
       </Group>
 
+      <Group title="التشخيصات وسجل الأخطاء" icon={Info}>
+        <DiagnosticsPanel />
+      </Group>
+
       <Group title="حول التطبيق" icon={Info}>
         <AboutSection />
       </Group>
