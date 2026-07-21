@@ -20,6 +20,7 @@ import { ocrImage, saveOcr } from "@/lib/ocr";
 import { embedImageFromUrl, putEmbedding, getEmbedding } from "@/lib/semantic";
 import { detectFacesInImage, replaceDetectedFaces, shouldScanFaces } from "@/lib/faces";
 import { faceSourceStamp } from "@/lib/faceSettings";
+import { logAI, mark } from "@/lib/diagnostics";
 
 export const CONSENT_KEY = "autoPipelineConsent";
 export const TASKS_KEY = "autoPipelineTasks";
