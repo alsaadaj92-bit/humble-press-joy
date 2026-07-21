@@ -18,7 +18,8 @@ import { photoDb, type MediaAsset } from "@/lib/photoDb";
 import { resolveAssetUrl } from "@/lib/providers";
 import { ocrImage, saveOcr } from "@/lib/ocr";
 import { embedImageFromUrl, putEmbedding, getEmbedding } from "@/lib/semantic";
-import { detectFacesInImage, saveDetectedFaces } from "@/lib/faces";
+import { detectFacesInImage, replaceDetectedFaces, shouldScanFaces } from "@/lib/faces";
+import { faceSourceStamp } from "@/lib/faceSettings";
 
 export const CONSENT_KEY = "autoPipelineConsent";
 export const TASKS_KEY = "autoPipelineTasks";
@@ -193,10 +194,10 @@ async function runFor(assetId: string) {
     status.currentTask = "الوجوه";
     emit();
     try {
-      const existing = await photoDb.faces.where("assetId").equals(assetId).count();
-      if (existing === 0) {
-        const rows = await detectFacesInImage(assetId, url);
-        await saveDetectedFaces(rows);
+      const stamp = faceSourceStamp(asset);
+      if (await shouldScanFaces(assetId, stamp)) {
+        const rows = await detectFacesInImage(assetId, url, stamp);
+        await replaceDetectedFaces(assetId, rows);
       }
     } catch (e) {
       console.warn("[autoPipeline:faces]", e);
@@ -222,7 +223,7 @@ export async function backfillMissing(limit = 50): Promise<number> {
       tasks.ocr ? photoDb.ocr.get(a.id).then(Boolean) : Promise.resolve(true),
       tasks.embed ? getEmbedding(a.id).then(Boolean) : Promise.resolve(true),
       tasks.faces
-        ? photoDb.faces.where("assetId").equals(a.id).count().then((n) => n > 0)
+        ? shouldScanFaces(a.id, faceSourceStamp(a)).then((needs) => !needs)
         : Promise.resolve(true),
     ]);
     if (!hasOcr || !hasEmb || !hasFace) {
