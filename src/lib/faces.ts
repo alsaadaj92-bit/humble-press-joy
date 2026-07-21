@@ -15,6 +15,7 @@ import {
 import { photoDb, type FaceRow, type PersonRow } from "./photoDb";
 import { clusterFaces, type FaceLike, type Cluster } from "./faceCluster";
 import { faceModelId, getFaceSettings, type FaceProcessingMode } from "./faceSettings";
+import { logDiag } from "./diagnostics";
 
 const WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
