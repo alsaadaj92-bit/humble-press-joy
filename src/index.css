@@ -136,7 +136,11 @@
   /* CSS-columns masonry */
   .masonry {
     column-gap: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
+  [dir="rtl"] .masonry { direction: rtl; }
+  .masonry > * { width: 100%; }
   .masonry-col-2 { column-count: 2; }
   .masonry-col-3 { column-count: 3; }
   .masonry-col-4 { column-count: 4; }
