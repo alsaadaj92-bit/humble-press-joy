@@ -62,11 +62,19 @@ export async function scanDeviceGallery(
   max = 50_000,
 ): Promise<number> {
   if (!canScanDeviceGallery()) return 0;
-
-  if (Capacitor.getPlatform() === "android") {
-    await requestGalleryPermission().catch(() => false);
-    return scanAndroidGallery(onProgress, max);
-  }
+  const platform = Capacitor.getPlatform();
+  logDiag("info", "scan", `starting device gallery scan (${platform})`);
+  try {
+    if (platform === "android") {
+      const granted = await requestGalleryPermission().catch((e) => {
+        logDiag("warn", "scan", "gallery permission request failed", e);
+        return false;
+      });
+      if (!granted) logDiag("warn", "scan", "gallery permission not granted — scan may be empty");
+      const n = await scanAndroidGallery(onProgress, max);
+      logDiag("info", "scan", `scan complete — inserted ${n} new assets`);
+      return n;
+    }
 
   const { medias } = await Media.getMedias({
     quantity: max,
