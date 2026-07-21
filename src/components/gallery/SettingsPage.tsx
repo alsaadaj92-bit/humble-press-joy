@@ -112,6 +112,10 @@ export function SettingsPage({ onNavigate }: Props) {
         <AutoPipelineSection />
       </Group>
 
+      <Group title="التعرّف على الوجوه" icon={UserRound}>
+        <FaceSettingsPanel />
+      </Group>
+
       <Group title="الإشعارات" icon={BellRing}>
         <NotificationsSection />
       </Group>
