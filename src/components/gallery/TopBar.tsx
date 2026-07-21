@@ -32,7 +32,7 @@ interface TopBarProps {
 
 /**
  * Google Photos-style header:
- *   [menu] [search................] [cast] [+ create] [help] [settings] [avatar]
+ *   [menu] [search................] [+ create] [help] [settings] [avatar]
  */
 export function TopBar({
   query,
