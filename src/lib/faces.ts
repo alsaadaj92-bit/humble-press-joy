@@ -14,6 +14,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { photoDb, type FaceRow, type PersonRow } from "./photoDb";
 import { clusterFaces, type FaceLike, type Cluster } from "./faceCluster";
+import { faceModelId, getFaceSettings, type FaceProcessingMode } from "./faceSettings";
 
 const WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
@@ -28,26 +29,80 @@ export const FACE_MODEL_URL = WASM_ROOT;
 let detector: FaceDetector | null = null;
 let embedder: ImageEmbedder | null = null;
 let loaded: Promise<void> | null = null;
+let loadedMode: FaceProcessingMode | null = null;
 
-export function loadFaceModels(): Promise<void> {
-  if (loaded) return loaded;
+export type FaceModelStage = "wasm" | "detector" | "embedder" | "ready";
+export interface FaceModelStatus {
+  status: "idle" | "loading" | "ready" | "error";
+  stage?: FaceModelStage;
+  progress: number;
+  mode?: FaceProcessingMode;
+  message?: string;
+}
+
+const modelListeners = new Set<(s: FaceModelStatus) => void>();
+let modelStatus: FaceModelStatus = { status: "idle", progress: 0 };
+
+function emitModelStatus(patch: Partial<FaceModelStatus>) {
+  modelStatus = { ...modelStatus, ...patch };
+  for (const l of modelListeners) l({ ...modelStatus });
+}
+
+export function subscribeFaceModelStatus(cb: (s: FaceModelStatus) => void) {
+  modelListeners.add(cb);
+  cb({ ...modelStatus });
+  return () => modelListeners.delete(cb);
+}
+
+export async function resetFaceModels() {
+  detector?.close?.();
+  embedder?.close?.();
+  detector = null;
+  embedder = null;
+  loaded = null;
+  loadedMode = null;
+  emitModelStatus({ status: "idle", stage: undefined, progress: 0, message: undefined });
+}
+
+export async function loadFaceModels(): Promise<void> {
+  const settings = await getFaceSettings();
+  if (loaded && loadedMode === settings.mode) return loaded;
+  if (loadedMode && loadedMode !== settings.mode) await resetFaceModels();
   loaded = (async () => {
+    const preferredDelegate = settings.mode === "fast" ? "GPU" : "CPU";
+    loadedMode = settings.mode;
+    emitModelStatus({ status: "loading", stage: "wasm", progress: 0.12, mode: settings.mode, message: undefined });
     const fileset = await FilesetResolver.forVisionTasks(WASM_ROOT);
-    [detector, embedder] = await Promise.all([
-      FaceDetector.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: FACE_DETECTOR_MODEL },
+    const create = async (delegate: "CPU" | "GPU") => {
+      emitModelStatus({ status: "loading", stage: "detector", progress: 0.36, mode: settings.mode });
+      const nextDetector = await FaceDetector.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: FACE_DETECTOR_MODEL, delegate },
         runningMode: "IMAGE",
-        minDetectionConfidence: 0.5,
-      }),
-      ImageEmbedder.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: EMBEDDER_MODEL },
+        minDetectionConfidence: settings.mode === "accurate" ? 0.62 : 0.48,
+      });
+      emitModelStatus({ status: "loading", stage: "embedder", progress: 0.72, mode: settings.mode });
+      const nextEmbedder = await ImageEmbedder.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: EMBEDDER_MODEL, delegate },
         runningMode: "IMAGE",
         l2Normalize: true,
         quantize: false,
-      }),
-    ]);
+      });
+      return [nextDetector, nextEmbedder] as const;
+    };
+
+    try {
+      [detector, embedder] = await create(preferredDelegate);
+    } catch (err) {
+      if (preferredDelegate !== "GPU") throw err;
+      // Android WebViews vary widely. Fast mode tries GPU first, then falls
+      // back to CPU automatically while keeping the user's mode unchanged.
+      [detector, embedder] = await create("CPU");
+    }
+    emitModelStatus({ status: "ready", stage: "ready", progress: 1, mode: settings.mode });
   })().catch((err) => {
     loaded = null;
+    loadedMode = null;
+    emitModelStatus({ status: "error", progress: 0, message: err instanceof Error ? err.message : String(err) });
     throw err;
   });
   return loaded;
@@ -94,12 +149,16 @@ function extractEmbedding(result: ImageEmbedderResult): number[] {
 export async function detectFacesInImage(
   assetId: string,
   url: string,
+  sourceStamp?: number,
 ): Promise<FaceRow[]> {
+  const started = performance.now();
+  const settings = await getFaceSettings();
   await loadFaceModels();
   if (!detector || !embedder) return [];
   const img = await imageFromUrl(url);
   const det = detector.detect(img);
   const now = Date.now();
+  const modelId = faceModelId(settings.mode);
   const rows: FaceRow[] = [];
   for (let i = 0; i < det.detections.length; i++) {
     const d = det.detections[i];
@@ -114,8 +173,13 @@ export async function detectFacesInImage(
       descriptor: emb,
       box: { x: bb.originX, y: bb.originY, width: bb.width, height: bb.height },
       detectedAt: now,
+      modelId,
+      sourceStamp,
     });
   }
+  const durationMs = Math.round(performance.now() - started);
+  for (const row of rows) row.durationMs = durationMs;
+  await markFaceScanned(assetId, { modelId, sourceStamp, durationMs, faces: rows.length });
   return rows;
 }
 
@@ -124,19 +188,84 @@ export async function saveDetectedFaces(rows: FaceRow[]): Promise<void> {
   await photoDb.faces.bulkPut(rows);
 }
 
+export interface FaceScanMeta {
+  modelId: string;
+  sourceStamp?: number;
+  durationMs: number;
+  faces: number;
+  scannedAt: number;
+}
+
+const scanMetaKey = (assetId: string) => `faceScan:${assetId}`;
+
+async function markFaceScanned(assetId: string, meta: Omit<FaceScanMeta, "scannedAt">) {
+  await photoDb.kv.put({
+    key: scanMetaKey(assetId),
+    value: JSON.stringify({ ...meta, scannedAt: Date.now() } satisfies FaceScanMeta),
+  });
+}
+
+export async function getFaceScanMeta(assetId: string): Promise<FaceScanMeta | null> {
+  const row = await photoDb.kv.get(scanMetaKey(assetId));
+  if (!row?.value) return null;
+  try {
+    return JSON.parse(row.value) as FaceScanMeta;
+  } catch {
+    return null;
+  }
+}
+
+export async function shouldScanFaces(assetId: string, sourceStamp?: number): Promise<boolean> {
+  const settings = await getFaceSettings();
+  const expectedModelId = faceModelId(settings.mode);
+  const meta = await getFaceScanMeta(assetId);
+  if (!meta) return true;
+  if (meta.modelId !== expectedModelId) return true;
+  if (sourceStamp !== undefined && meta.sourceStamp !== sourceStamp) return true;
+  return false;
+}
+
+export async function replaceDetectedFaces(assetId: string, rows: FaceRow[]): Promise<void> {
+  await photoDb.transaction("rw", photoDb.faces, async () => {
+    await photoDb.faces.where("assetId").equals(assetId).delete();
+    if (rows.length) await photoDb.faces.bulkPut(rows);
+  });
+}
+
+export async function faceScanStats() {
+  const rows = (await photoDb.kv.toArray()).filter((r) => r.key.startsWith("faceScan:"));
+  const durations: number[] = [];
+  let scanned = 0;
+  let faces = 0;
+  for (const row of rows) {
+    try {
+      const meta = JSON.parse(row.value) as FaceScanMeta;
+      scanned++;
+      faces += meta.faces || 0;
+      if (meta.durationMs) durations.push(meta.durationMs);
+    } catch { /* ignore malformed rows */ }
+  }
+  const averageMs = durations.length
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : 0;
+  return { scanned, faces, averageMs };
+}
+
 /**
  * Re-cluster all stored faces and update person assignments.
  * MobileNet L2-normalized embeddings need a wider threshold than face-api's
  * 128-D descriptors — ~0.95 euclidean works well as a starting point.
  */
-export async function rebuildPersons(threshold = 0.95): Promise<Cluster[]> {
+export async function rebuildPersons(threshold?: number): Promise<Cluster[]> {
+  const settings = await getFaceSettings();
+  const effectiveThreshold = threshold ?? settings.clusterThreshold;
   const faces = await photoDb.faces.toArray();
   const like: FaceLike[] = faces.map((f) => ({
     id: f.id,
     assetId: f.assetId,
     descriptor: f.descriptor,
   }));
-  const clusters = clusterFaces(like, threshold);
+  const clusters = clusterFaces(like, effectiveThreshold);
   const now = Date.now();
 
   const existing = new Map<string, PersonRow>();
