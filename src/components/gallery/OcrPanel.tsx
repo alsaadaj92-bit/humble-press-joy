@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { photoDb, type OcrRow } from "@/lib/photoDb";
-import { ocrImage, saveOcr, deleteOcr, matchesOcr, disposeOcr } from "@/lib/ocr";
+import { ocrImage, saveOcr, deleteOcr, matchesOcr } from "@/lib/ocr";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
 
@@ -27,10 +27,9 @@ export function OcrPanel({ photos, onOpen }: Props) {
 
   useEffect(() => {
     load();
-    return () => {
-      // release worker when panel unmounts
-      disposeOcr().catch(() => {});
-    };
+    // Keep the Tesseract worker alive across tab switches so background
+    // AutoPipeline scans don't get killed mid-run. It's released when the
+    // page unloads.
   }, []);
 
   const imagePhotos = useMemo(

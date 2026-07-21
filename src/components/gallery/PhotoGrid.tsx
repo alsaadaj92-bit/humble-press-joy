@@ -54,6 +54,7 @@ export function PhotoGrid({
   }, [photos]);
   const selectionMode = selection.size > 0;
   const lastClickRef = useRef<string | null>(null);
+  const lastOpenAtRef = useRef<number>(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -90,6 +91,11 @@ export function PhotoGrid({
                         onToggleSelect(photo.id, e.shiftKey);
                         lastClickRef.current = photo.id;
                       } else {
+                        // Debounce rage-tapping so the lightbox can't be
+                        // re-opened during its own transition (300ms).
+                        const now = Date.now();
+                        if (now - lastOpenAtRef.current < 300) return;
+                        lastOpenAtRef.current = now;
                         onOpen(idx);
                       }
                     }}

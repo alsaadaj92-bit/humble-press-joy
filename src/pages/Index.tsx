@@ -45,7 +45,8 @@ import { useGridDensity } from "@/hooks/useGridDensity";
 import { useBackButton } from "@/hooks/useBackButton";
 import { runViewTransition } from "@/lib/viewTransition";
 
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { generateMockPhotos, type MockPhoto } from "@/lib/mockPhotos";
 import { usePhotoStates } from "@/hooks/usePhotoStates";
 import { useProviders } from "@/hooks/useProviders";
@@ -296,6 +297,12 @@ const Index = () => {
 
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent side="right" className="w-72 p-0">
+          <VisuallyHidden>
+            <SheetHeader>
+              <SheetTitle>القائمة الرئيسية</SheetTitle>
+              <SheetDescription>تنقل بين أقسام المعرض</SheetDescription>
+            </SheetHeader>
+          </VisuallyHidden>
           <GallerySidebar
             embedded
             active={activeSection}

@@ -210,9 +210,12 @@ export async function detectFacesInImage(
 ): Promise<FaceRow[]> {
   const started = performance.now();
   const settings = await getFaceSettings();
+  // Only log model readiness on the first (or reset) load — otherwise this
+  // fires for every image and floods the diagnostic report.
+  const wasLoaded = !!(detector && embedder);
   const loadT = mark();
   await loadFaceModels();
-  logAI("faces", "models available", { ms: loadT(), mode: settings.mode });
+  if (!wasLoaded) logAI("faces", "models available", { ms: loadT(), mode: settings.mode });
   if (!detector || !embedder) return [];
   const decodeT = mark();
   const { img, cleanup } = await loadImageForFaces(assetId, url);
