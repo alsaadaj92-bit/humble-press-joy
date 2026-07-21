@@ -110,11 +110,18 @@ export async function checkGalleryPermission(): Promise<"granted" | "denied" | "
 
 // ------- Local notifications --------------------------------------------------
 export async function requestNotifPermission(): Promise<boolean> {
-  if (!isNative()) return "Notification" in globalThis
-    ? (await Notification.requestPermission()) === "granted"
-    : false;
+  logPerm("perm", "notif: request start");
+  if (!isNative()) {
+    const granted = "Notification" in globalThis
+      ? (await Notification.requestPermission()) === "granted"
+      : false;
+    logPerm("perm", `notif(web): ${granted ? "granted" : "denied"}`, undefined, granted ? "info" : "warn");
+    return granted;
+  }
   const res: LNStatus = await LocalNotifications.requestPermissions();
-  return res.display === "granted";
+  const granted = res.display === "granted";
+  logPerm("perm", `notif: ${granted ? "granted" : res.display}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkNotifPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
@@ -123,7 +130,9 @@ export async function checkNotifPermission(): Promise<"granted" | "denied" | "pr
     return Notification.permission as "granted" | "denied" | "prompt";
   }
   const res = await LocalNotifications.checkPermissions();
-  return (res.display as never) ?? "prompt";
+  const state = (res.display as never) ?? "prompt";
+  logPerm("perm", `notif check: ${state}`, res);
+  return state;
 }
 
 let notifCounter = 1;
@@ -152,14 +161,19 @@ export async function notify(title: string, body: string) {
 // ------- Geolocation ---------------------------------------------------------
 export async function requestLocationPermission(): Promise<boolean> {
   if (!isNative()) return false;
+  logPerm("perm", "location: request start");
   const res = await Geolocation.requestPermissions();
-  return res.location === "granted";
+  const granted = res.location === "granted";
+  logPerm("perm", `location: ${granted ? "granted" : res.location}`, res, granted ? "info" : "warn");
+  return granted;
 }
 
 export async function checkLocationPermission(): Promise<"granted" | "denied" | "prompt" | "unknown"> {
   if (!isNative()) return "unknown";
   const res = await Geolocation.checkPermissions();
-  return (res.location as never) ?? "prompt";
+  const state = (res.location as never) ?? "prompt";
+  logPerm("perm", `location check: ${state}`, res);
+  return state;
 }
 
 // ------- Native share --------------------------------------------------------
