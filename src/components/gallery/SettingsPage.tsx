@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { IdentityCard } from "./IdentityCard";
 import { EncryptionPanel } from "./EncryptionPanel";
+import { FaceSettingsPanel } from "./FaceSettingsPanel";
 import { BackupPanel } from "./BackupPanel";
 import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { useProviders } from "@/hooks/useProviders";
