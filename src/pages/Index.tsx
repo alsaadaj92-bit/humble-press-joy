@@ -352,11 +352,11 @@ const Index = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-2 border-b border-border/60 bg-background/80 backdrop-blur">
-          <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-background/80 backdrop-blur">
+          <div className="min-w-0 flex-1 overflow-x-auto">
             <QuickChips active={activeSection} onSelect={setActiveSection} />
           </div>
-          <div className="shrink-0 pl-2 pr-4 md:pr-8">
+          <div className="flex shrink-0 items-center border-r border-border/60 px-3 py-2 md:pl-6 rtl:border-l rtl:border-r-0">
             <DensityToggle density={density} onChange={setDensity} />
           </div>
         </div>

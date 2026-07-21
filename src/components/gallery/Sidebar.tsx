@@ -40,8 +40,10 @@ interface NavItem {
   id: string;
   label: string;
   icon: typeof Images;
-  /** Feature isn't wired yet — show "قريباً" badge. */
+  /** Feature isn't wired yet — hide by default. */
   stub?: boolean;
+  /** Only meaningful on the native Android/iOS build. */
+  nativeOnly?: boolean;
 }
 
 interface NavGroup {
@@ -50,7 +52,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Mirrors Google Photos' primary IA: Photos → Explore → Sharing → Library.
+// Mirrors Google Photos' primary IA: Photos → Sharing → Library (with Explore nested).
 const GROUPS: NavGroup[] = [
   {
     id: "main",
@@ -58,17 +60,6 @@ const GROUPS: NavGroup[] = [
       { id: "photos", label: "الصور", icon: Images },
       { id: "memories", label: "الذكريات", icon: Sparkles },
       { id: "sharing", label: "المشاركة", icon: Share2, stub: true },
-    ],
-  },
-  {
-    id: "explore",
-    label: "استكشاف",
-    items: [
-      { id: "people", label: "الأشخاص والحيوانات", icon: UserRound },
-      { id: "places", label: "الأماكن", icon: MapPin },
-      { id: "things", label: "الأشياء", icon: Compass, stub: true },
-      { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
-      { id: "ocr", label: "قراءة النصوص", icon: ScanText },
     ],
   },
   {
@@ -83,7 +74,6 @@ const GROUPS: NavGroup[] = [
       { id: "eraser", label: "الممحاة السحرية", icon: Wrench },
       { id: "live-albums", label: "ألبومات حية", icon: Sparkles },
     ],
-
   },
   {
     id: "library",
@@ -91,6 +81,11 @@ const GROUPS: NavGroup[] = [
     items: [
       { id: "library", label: "نظرة عامة", icon: LibraryBig },
       { id: "albums", label: "الألبومات", icon: LibraryBig },
+      { id: "people", label: "الأشخاص والحيوانات", icon: UserRound },
+      { id: "places", label: "الأماكن", icon: MapPin },
+      { id: "things", label: "الأشياء", icon: Compass, stub: true },
+      { id: "smart", label: "بحث ذكي (AI)", icon: Brain },
+      { id: "ocr", label: "قراءة النصوص", icon: ScanText },
       { id: "favorites", label: "المفضلة", icon: Heart },
       { id: "starred", label: "المميّزة بنجمة", icon: Star, stub: true },
       { id: "duplicates", label: "التكرارات", icon: Copy },
@@ -106,18 +101,25 @@ const GROUPS: NavGroup[] = [
       { id: "providers", label: "مزودو التخزين", icon: Cloud },
       { id: "sync", label: "مركز المزامنة", icon: RefreshCw },
       { id: "partner", label: "الشريك", icon: Users, stub: true },
-      { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true },
-      { id: "permissions", label: "الأذونات (تطبيق أصلي)", icon: Lock },
+      { id: "print", label: "متجر الطباعة", icon: Wrench, stub: true, nativeOnly: true },
+      { id: "permissions", label: "الأذونات (تطبيق أصلي)", icon: Lock, nativeOnly: true },
       { id: "settings", label: "الإعدادات", icon: Settings },
     ],
   },
 ];
 
 export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: SidebarProps) {
+  // Filter out stubs (not wired yet) and native-only items on web.
+  const cap = (globalThis as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  const isNativeApp = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform();
+  const groups = GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => !it.stub && (!it.nativeOnly || isNativeApp)),
+  })).filter((g) => g.items.length > 0);
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
+        "flex w-72 shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground",
         !embedded && "hidden md:flex",
         embedded && "h-full w-full border-l-0",
       )}
@@ -141,7 +143,7 @@ export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: Si
       </button>
 
       <nav className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-2 pb-4">
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.id}>
             {group.label && (
               <div className="px-4 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

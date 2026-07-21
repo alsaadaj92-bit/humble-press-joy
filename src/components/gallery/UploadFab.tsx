@@ -270,7 +270,7 @@ export function UploadFab() {
         style={{ pointerEvents: "none" }}
       />
 
-      <div className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:hidden" style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 4px)" }}>
+      <div className="fixed bottom-20 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:hidden rtl:left-4 rtl:right-auto" style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 4px)" }}>
         {menuOpen && (
           <>
             {isNative() && (

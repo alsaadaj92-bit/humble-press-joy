@@ -155,13 +155,41 @@ export function PlacesPanel({
   const resetView = () => setView({ zoom: 1, cx: W / 2, cy: H / 2 });
 
   if (!geo.length) {
+    const requestLocation = () => {
+      if (!("geolocation" in navigator)) return;
+      navigator.geolocation.getCurrentPosition(
+        () => {},
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    };
+    const openImport = () => {
+      const fab = document.getElementById("lp-fab-toggle");
+      if (fab) (fab as HTMLButtonElement).click();
+    };
     return (
       <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
-        <MapPin className="mx-auto mb-3 h-8 w-8 text-primary" />
+        <MapPin className="mx-auto mb-3 h-10 w-10 text-primary" />
         <h2 className="mb-2 text-xl font-semibold">لا توجد صور بإحداثيات موقع</h2>
-        <p className="text-sm text-muted-foreground">
-          عندما ترفع صوراً تحوي بيانات EXIF بموقع GPS ستظهر هنا على خريطة تعمل محلياً بالكامل.
+        <p className="mx-auto mb-6 max-w-md text-sm text-muted-foreground">
+          عندما تستورد صوراً تحوي بيانات EXIF بموقع GPS ستظهر هنا على خريطة تعمل محلياً بالكامل — دون أي خدمات خارجية.
         </p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            onClick={requestLocation}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
+          >
+            <Locate className="h-4 w-4" />
+            تفعيل خدمات الموقع
+          </button>
+          <button
+            onClick={openImport}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold transition hover:bg-secondary"
+          >
+            <Plus className="h-4 w-4" />
+            استيراد صور
+          </button>
+        </div>
       </div>
     );
   }
