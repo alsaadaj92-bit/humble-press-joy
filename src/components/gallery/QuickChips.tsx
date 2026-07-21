@@ -25,7 +25,7 @@ interface Props {
 
 export function QuickChips({ active, onSelect }: Props) {
   return (
-    <div className="scrollbar-thin flex gap-2 overflow-x-auto border-b border-border/60 bg-background/80 px-4 py-2.5 backdrop-blur md:px-8">
+    <div className="scrollbar-thin flex gap-2 overflow-x-auto bg-transparent px-4 py-2.5 md:px-8">
       {CHIPS.map((c) => {
         const Icon = c.icon;
         const isActive = active === c.id;
