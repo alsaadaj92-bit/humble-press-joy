@@ -2,6 +2,7 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 declare const __APP_VERSION__: string;
+declare const __OTA_REPO__: string;
 
 interface ImportMetaEnv {
   readonly VITE_OTA_REPO?: string;
