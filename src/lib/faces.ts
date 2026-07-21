@@ -93,7 +93,9 @@ export async function loadFaceModels(): Promise<void> {
 
     try {
       [detector, embedder] = await create(preferredDelegate);
+      logDiag("info", "faces", `models ready (${loadedMode})`, { delegate: preferredDelegate });
     } catch (err) {
+      logDiag("warn", "faces", `GPU delegate failed, falling back to CPU`, err);
       if (preferredDelegate !== "GPU") throw err;
       // Android WebViews vary widely. Fast mode tries GPU first, then falls
       // back to CPU automatically while keeping the user's mode unchanged.
@@ -103,6 +105,7 @@ export async function loadFaceModels(): Promise<void> {
   })().catch((err) => {
     loaded = null;
     loadedMode = null;
+    logDiag("error", "faces", "model load failed", err);
     emitModelStatus({ status: "error", progress: 0, message: err instanceof Error ? err.message : String(err) });
     throw err;
   });
