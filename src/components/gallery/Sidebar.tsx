@@ -143,7 +143,7 @@ export function GallerySidebar({ active, onSelect, onSearchClick, embedded }: Si
       </button>
 
       <nav className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-2 pb-4">
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.id}>
             {group.label && (
               <div className="px-4 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
