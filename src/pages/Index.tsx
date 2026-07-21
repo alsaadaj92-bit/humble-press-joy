@@ -63,16 +63,6 @@ import { AutoPipelineBadge } from "@/components/gallery/AutoPipelineBadge";
 import { parseQuery, matchPhoto, describeQuery } from "@/lib/search";
 import { buildTimelineBuckets } from "@/lib/timeline";
 
-// Sections that fall back to "coming soon" placeholders.
-const STUB_SECTIONS: Record<string, { title: string; body: string }> = {
-  things: {
-    title: "الأشياء",
-    body: "تصنيف الصور حسب المحتوى (طعام، سيارات، حيوانات...) — سيصل قريباً باستخدام CLIP محلياً.",
-  },
-  starred: { title: "المميّزة بنجمة", body: "علامات نجوم مخصصة إلى جانب المفضلة — قريباً." },
-  partner: { title: "مكتبة الشريك", body: "مشاركة كل مكتبتك تلقائياً مع شخص تثق به — قريباً." },
-  print: { title: "متجر الطباعة", body: "طلب طباعة صورك على ورق أو كتاب — قريباً." },
-};
 
 
 
@@ -568,13 +558,6 @@ const Index = () => {
           )}
 
 
-          {STUB_SECTIONS[activeSection] && (
-            <PlaceholderSection
-              title={STUB_SECTIONS[activeSection].title}
-              body={STUB_SECTIONS[activeSection].body}
-            />
-          )}
-
           {activeSection === "settings" && (
             <SettingsPage onNavigate={setActiveSection} />
           )}
@@ -639,14 +622,5 @@ function SectionHero({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-
-function PlaceholderSection({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
-      <h2 className="mb-2 text-xl font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{body}</p>
-    </div>
-  );
-}
 
 export default Index;

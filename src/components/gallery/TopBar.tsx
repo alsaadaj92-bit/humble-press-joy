@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Menu,
   Search,
-  Cast,
   Plus,
   HelpCircle,
   Settings2,
@@ -66,9 +65,7 @@ export function TopBar({
       </div>
 
       <div className="mr-auto flex items-center gap-1">
-        <IconBtn label="بث للتلفزيون" onClick={() => stub("البث")}>
-          <Cast className="h-5 w-5" />
-        </IconBtn>
+
 
         <CreateMenu onSelectSection={onSelectSection} stub={stub} />
 
