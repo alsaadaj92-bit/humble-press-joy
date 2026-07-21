@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Lock, Unlock, ShieldCheck, ShieldOff, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { confirmDialog } from "@/lib/confirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -64,9 +65,12 @@ export function EncryptionPanel() {
 
   const doDisable = async () => {
     if (
-      !confirm(
-        "سيتم حذف كلمة السر. الملفات المشفّرة السابقة لن يمكن فكّها بعد ذلك. هل تريد المتابعة؟",
-      )
+      !(await confirmDialog({
+        title: "تعطيل التشفير",
+        message:
+          "سيتم حذف كلمة السر. الملفات المشفّرة السابقة لن يمكن فكّها بعد ذلك. هل تريد المتابعة؟",
+        destructive: true,
+      }))
     )
       return;
     await disableE2EE();

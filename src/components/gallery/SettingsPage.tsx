@@ -20,6 +20,7 @@ import { EncryptionPanel } from "./EncryptionPanel";
 import { FaceSettingsPanel } from "./FaceSettingsPanel";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { BackupPanel } from "./BackupPanel";
+import { confirmDialog } from "@/lib/confirmDialog";
 import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { useProviders } from "@/hooks/useProviders";
 import { useLockedFolder } from "@/hooks/useLockedFolder";
@@ -389,7 +390,7 @@ function LockedFolderSection({ onNavigate }: { onNavigate: (s: string) => void }
         title="إعادة ضبط المجلد المؤمَّن"
         desc="يمسح الرمز ويفكّ قفل جميع العناصر."
         onClick={async () => {
-          if (!confirm("سيتم مسح الرمز وفك قفل كل الصور. متابعة؟")) return;
+          if (!(await confirmDialog({ title: "إعادة ضبط المجلد المؤمَّن", message: "سيتم مسح الرمز وفك قفل كل الصور. متابعة؟", destructive: true }))) return;
           await resetLockedFolder();
           setHasPin(false);
           toast.success("تمت إعادة الضبط");
@@ -509,7 +510,7 @@ function NotificationsSection() {
 
 function PrivacySection() {
   const clearAll = async () => {
-    if (!confirm("سيتم مسح كل الميتاداتا محلياً (الحالات، الألبومات، مراجع الأصول، الطوابير). الملفات على المزوّد لن تُمسّ. متابعة؟")) return;
+    if (!(await confirmDialog({ title: "مسح كل الميتاداتا", message: "سيتم مسح كل الميتاداتا محلياً (الحالات، الألبومات، مراجع الأصول، الطوابير). الملفات على المزوّد لن تُمسّ. متابعة؟", destructive: true, confirmText: "مسح الكل" }))) return;
     await Promise.all([
       photoDb.assets.clear(),
       photoDb.states.clear(),

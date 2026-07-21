@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { confirmDialog } from "@/lib/confirmDialog";
 import { useAlbums } from "@/hooks/useAlbums";
 import { useAlbumMemberIndex } from "@/hooks/useAlbumMembers";
 import { useProviders } from "@/hooks/useProviders";
@@ -121,7 +122,7 @@ export function AlbumsPanel() {
   };
 
   const remove = async (a: Album) => {
-    if (!window.confirm(`حذف ألبوم «${a.name}»؟ الصور تبقى محفوظة.`)) return;
+    if (!(await confirmDialog({ title: "حذف الألبوم", message: `حذف ألبوم «${a.name}»؟ الصور تبقى محفوظة.`, destructive: true, confirmText: "حذف" }))) return;
     await deleteManualAlbum(a.id);
     toast.success("حُذف الألبوم");
   };

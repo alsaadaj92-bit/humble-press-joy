@@ -8,6 +8,7 @@ import {
   type DiagEntry,
 } from "@/lib/diagnostics";
 import { cn } from "@/lib/utils";
+import { confirmDialog } from "@/lib/confirmDialog";
 
 /**
  * In-app diagnostics viewer. Shows the last ~300 log entries and lets the
@@ -38,7 +39,7 @@ export function DiagnosticsPanel() {
   };
 
   const clear = async () => {
-    if (!confirm("مسح كل السجلات؟")) return;
+    if (!(await confirmDialog({ title: "مسح السجلات", message: "مسح كل السجلات؟", destructive: true, confirmText: "مسح" }))) return;
     await clearDiagnostics();
     toast.success("تم المسح");
   };
