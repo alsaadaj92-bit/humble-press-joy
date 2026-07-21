@@ -112,6 +112,32 @@ export async function loadFaceModels(): Promise<void> {
   return loaded;
 }
 
+function cropToCanvas(
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): HTMLCanvasElement {
+  const pad = 0.2;
+  const px = Math.max(0, x - w * pad);
+  const py = Math.max(0, y - h * pad);
+  const pw = Math.min(img.naturalWidth - px, w * (1 + pad * 2));
+  const ph = Math.min(img.naturalHeight - py, h * (1 + pad * 2));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(pw));
+  canvas.height = Math.max(1, Math.round(ph));
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, px, py, pw, ph, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function extractEmbedding(result: ImageEmbedderResult): number[] {
+  const e = result.embeddings?.[0];
+  if (!e) return [];
+  return Array.from(e.floatEmbedding ?? []);
+}
+
 async function decodeImage(src: string): Promise<HTMLImageElement> {
   const img = new Image();
   img.decoding = "async";
