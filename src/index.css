@@ -71,12 +71,38 @@
     padding: 0;
     background: #000;
     overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv11", "ss01";
     font-family: "Cairo", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    touch-action: pan-x pan-y;
+  }
+
+  /* Zero 300ms tap delay + crisp taps on all interactive elements */
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  label,
+  summary,
+  select {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Minimum 44x44 tap target on touch devices */
+  @media (pointer: coarse) {
+    button,
+    a[role="button"],
+    [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
@@ -85,8 +111,14 @@
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .safe-x { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
   .mt-safe { margin-top: env(safe-area-inset-top); }
+  .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
   .h-safe-top { height: env(safe-area-inset-top); }
+  .h-safe-bottom { height: env(safe-area-inset-bottom); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .no-overscroll { overscroll-behavior: contain; }
 }
+
 
 @layer components {
   .input-field {
