@@ -112,16 +112,6 @@ export async function loadFaceModels(): Promise<void> {
   return loaded;
 }
 
-async function imageFromUrl(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("image load failed"));
-    img.src = url;
-  });
-}
-
 function cropToCanvas(
   img: HTMLImageElement,
   x: number,
@@ -129,7 +119,6 @@ function cropToCanvas(
   w: number,
   h: number,
 ): HTMLCanvasElement {
-  // Expand crop 20% for context — improves embedding stability.
   const pad = 0.2;
   const px = Math.max(0, x - w * pad);
   const py = Math.max(0, y - h * pad);
@@ -146,8 +135,72 @@ function cropToCanvas(
 function extractEmbedding(result: ImageEmbedderResult): number[] {
   const e = result.embeddings?.[0];
   if (!e) return [];
-  // floatEmbedding is a number[] when quantize:false.
   return Array.from(e.floatEmbedding ?? []);
+}
+
+async function decodeImage(src: string): Promise<HTMLImageElement> {
+  const img = new Image();
+  img.decoding = "async";
+  img.crossOrigin = "anonymous";
+  img.src = src;
+  // Use decode() so MediaPipe never re-fetches; if unsupported, fall back to onload.
+  if (typeof img.decode === "function") {
+    await img.decode();
+  } else {
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("image load failed"));
+    });
+  }
+  return img;
+}
+
+async function loadImageForFaces(
+  assetId: string,
+  url: string,
+): Promise<{ img: HTMLImageElement; cleanup: () => void }> {
+  // Prefer the Dexie-stored Blob: it's local, CORS-free, and stable across
+  // MediaPipe's internal re-reads. Fall back to the provided URL only if the
+  // asset isn't cached locally (e.g. remote-only providers).
+  let objectUrl: string | null = null;
+  try {
+    const asset = await photoDb.assets.get(assetId);
+    if (asset?.blob) {
+      objectUrl = URL.createObjectURL(asset.blob);
+      const img = await decodeImage(objectUrl);
+      return {
+        img,
+        cleanup: () => {
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+        },
+      };
+    }
+  } catch (err) {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = null;
+    logDiag("warn", "faces", "dexie blob load failed, fetching url", err);
+  }
+
+  // Fallback: fetch the URL ourselves into a Blob so MediaPipe's internal
+  // image reads never hit a cross-origin src or a stale data: URI.
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    objectUrl = URL.createObjectURL(blob);
+    const img = await decodeImage(objectUrl);
+    return {
+      img,
+      cleanup: () => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      },
+    };
+  } catch {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    // Last resort: decode directly from the source URL.
+    const img = await decodeImage(url);
+    return { img, cleanup: () => {} };
+  }
 }
 
 export async function detectFacesInImage(
@@ -159,32 +212,36 @@ export async function detectFacesInImage(
   const settings = await getFaceSettings();
   await loadFaceModels();
   if (!detector || !embedder) return [];
-  const img = await imageFromUrl(url);
-  const det = detector.detect(img);
-  const now = Date.now();
-  const modelId = faceModelId(settings.mode);
-  const rows: FaceRow[] = [];
-  for (let i = 0; i < det.detections.length; i++) {
-    const d = det.detections[i];
-    const bb = d.boundingBox;
-    if (!bb) continue;
-    const crop = cropToCanvas(img, bb.originX, bb.originY, bb.width, bb.height);
-    const emb = extractEmbedding(embedder.embed(crop));
-    if (!emb.length) continue;
-    rows.push({
-      id: `${assetId}:${i}`,
-      assetId,
-      descriptor: emb,
-      box: { x: bb.originX, y: bb.originY, width: bb.width, height: bb.height },
-      detectedAt: now,
-      modelId,
-      sourceStamp,
-    });
+  const { img, cleanup } = await loadImageForFaces(assetId, url);
+  try {
+    const det = detector.detect(img);
+    const now = Date.now();
+    const modelId = faceModelId(settings.mode);
+    const rows: FaceRow[] = [];
+    for (let i = 0; i < det.detections.length; i++) {
+      const d = det.detections[i];
+      const bb = d.boundingBox;
+      if (!bb) continue;
+      const crop = cropToCanvas(img, bb.originX, bb.originY, bb.width, bb.height);
+      const emb = extractEmbedding(embedder.embed(crop));
+      if (!emb.length) continue;
+      rows.push({
+        id: `${assetId}:${i}`,
+        assetId,
+        descriptor: emb,
+        box: { x: bb.originX, y: bb.originY, width: bb.width, height: bb.height },
+        detectedAt: now,
+        modelId,
+        sourceStamp,
+      });
+    }
+    const durationMs = Math.round(performance.now() - started);
+    for (const row of rows) row.durationMs = durationMs;
+    await markFaceScanned(assetId, { modelId, sourceStamp, durationMs, faces: rows.length });
+    return rows;
+  } finally {
+    cleanup();
   }
-  const durationMs = Math.round(performance.now() - started);
-  for (const row of rows) row.durationMs = durationMs;
-  await markFaceScanned(assetId, { modelId, sourceStamp, durationMs, faces: rows.length });
-  return rows;
 }
 
 export async function saveDetectedFaces(rows: FaceRow[]): Promise<void> {
