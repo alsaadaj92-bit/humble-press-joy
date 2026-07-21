@@ -4,6 +4,7 @@ import { Capacitor, registerPlugin } from "@capacitor/core";
 import { Filesystem } from "@capacitor/filesystem";
 import type { MediaAsset } from "./photoDb";
 import { photoDb } from "./photoDb";
+import { requestGalleryPermission } from "./native";
 
 interface DeviceMediaItem {
   identifier: string;
@@ -25,16 +26,46 @@ interface MediaPluginShape {
   getMediaByIdentifier?(opts: { identifier: string }): Promise<{ path: string }>;
 }
 
+interface LocalGalleryMediaItem {
+  id: string;
+  name: string;
+  mime: string;
+  width: number;
+  height: number;
+  size: number;
+  date: number;
+  duration?: number;
+  uri?: string;
+  path?: string;
+  thumbnail?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface LocalGalleryMediaPlugin {
+  getDeviceMedia(opts?: { limit?: number; offset?: number; thumbnailSize?: number }): Promise<{
+    items: LocalGalleryMediaItem[];
+    total?: number;
+    hasMore?: boolean;
+  }>;
+}
+
 const Media = registerPlugin<MediaPluginShape>("Media");
+const LocalGalleryMedia = registerPlugin<LocalGalleryMediaPlugin>("LocalGalleryMedia");
 
 export const canScanDeviceGallery = () => Capacitor.isNativePlatform();
 
 /** Read every photo + video from the phone's system gallery. */
 export async function scanDeviceGallery(
   onProgress?: (done: number, total: number) => void,
-  max = 5000,
+  max = 50_000,
 ): Promise<number> {
   if (!canScanDeviceGallery()) return 0;
+
+  if (Capacitor.getPlatform() === "android") {
+    await requestGalleryPermission().catch(() => false);
+    return scanAndroidGallery(onProgress, max);
+  }
 
   const { medias } = await Media.getMedias({
     quantity: max,
@@ -79,6 +110,63 @@ export async function scanDeviceGallery(
 
     await photoDb.assets.put(asset);
     inserted++;
+  }
+
+  onProgress?.(total, total);
+  return inserted;
+}
+
+async function scanAndroidGallery(
+  onProgress?: (done: number, total: number) => void,
+  max = 50_000,
+): Promise<number> {
+  const PAGE = 500;
+  let offset = 0;
+  let inserted = 0;
+  let total = 0;
+
+  while (offset < max) {
+    const res = await LocalGalleryMedia.getDeviceMedia({
+      limit: Math.min(PAGE, max - offset),
+      offset,
+      thumbnailSize: 360,
+    });
+    const items = res.items ?? [];
+    total = res.total ?? Math.max(total, offset + items.length);
+    onProgress?.(offset, total);
+
+    for (let i = 0; i < items.length; i++) {
+      const m = items[i];
+      const id = `device:${m.id}`;
+      const existing = await photoDb.assets.get(id);
+      if (!existing) {
+        const isVideo = m.mime.startsWith("video/") || !!m.duration;
+        const asset: MediaAsset = {
+          id,
+          provider: "device",
+          name: m.name || m.id,
+          size: m.size || 0,
+          mime: m.mime || (isVideo ? "video/*" : "image/*"),
+          width: m.width || undefined,
+          height: m.height || undefined,
+          date: m.date || Date.now(),
+          createdAt: Date.now(),
+          kind: isVideo ? "video" : "image",
+          posterDataUrl: m.thumbnail,
+          deviceIdentifier: m.uri ?? m.path ?? m.id,
+          ...(isVideo ? { duration: m.duration } : {}),
+          ...(m.latitude && m.longitude
+            ? { exif: { gps: { lat: m.latitude, lon: m.longitude }, dateTaken: m.date } }
+            : {}),
+        };
+        await photoDb.assets.put(asset);
+        inserted++;
+      }
+      onProgress?.(offset + i + 1, total);
+    }
+
+    offset += items.length;
+    if (!items.length || !res.hasMore || offset >= total) break;
   }
 
   onProgress?.(total, total);
