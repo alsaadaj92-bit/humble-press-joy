@@ -280,7 +280,7 @@ const Index = () => {
       document.getElementById("lp-fab-toggle")?.click();
       return;
     }
-    setActiveSection(id);
+    runViewTransition(() => setActiveSection(id));
   }, []);
 
   const sectionMeta: Record<string, { title: string; sub: (n: number) => string }> = {
@@ -581,7 +581,10 @@ const Index = () => {
         </div>
       </main>
 
-      <UploadFab />
+      {(activeSection === "photos" ||
+        activeSection === "favorites" ||
+        activeSection === "archive" ||
+        activeSection === "library") && <UploadFab />}
       <MobileNav active={activeSection} onSelect={handleTabSelect} />
 
       <Lightbox
