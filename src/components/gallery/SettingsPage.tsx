@@ -545,7 +545,6 @@ function AboutSection() {
 }
 
 function OtaSection() {
-  const [repo, setRepoState] = useState(getRepo());
   const [info, setInfo] = useState<UpdateInfo | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -554,8 +553,7 @@ function OtaSection() {
     try {
       const result = await checkForUpdate();
       setInfo(result);
-      if (!getRepo()) toast.info("اضبط اسم مستودع GitHub أولاً (owner/repo)");
-      else if (result.available) toast.success(`تحديث متاح: v${result.latestVersion}`);
+      if (result.available) toast.success(`تحديث متاح: v${result.latestVersion}`);
       else if (result.latestVersion) toast.message(`أنت على أحدث إصدار (v${result.currentVersion})`);
       else toast.error("تعذّر الوصول إلى GitHub");
     } finally {
@@ -566,21 +564,11 @@ function OtaSection() {
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <div>
-        <p className="text-sm font-medium">مستودع GitHub للتحديثات</p>
+        <p className="text-sm font-medium">تحديثات التطبيق</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          صيغة <span dir="ltr" className="font-mono">owner/repo</span>. عند كل Release جديد يظهر بانر تحديث تلقائي.
+          يبحث تلقائياً عن أحدث إصدار من GitHub Releases ويثبّته مباشرة — بدون أي رابط يدوي.
         </p>
       </div>
-      <input
-        dir="ltr"
-        placeholder="username/localphotos-pro"
-        value={repo}
-        onChange={(e) => {
-          setRepoState(e.target.value);
-          setRepo(e.target.value);
-        }}
-        className="input-field font-mono"
-      />
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground">
           الإصدار الحالي: <span dir="ltr" className="text-foreground">v{APP_VERSION}</span>
@@ -594,15 +582,15 @@ function OtaSection() {
               onClick={() => launchApkInstall(info.apkUrl!)}
               className="btn-primary text-xs"
             >
-              تحميل APK
+              تحميل وتثبيت
             </button>
           )}
           <button
             onClick={runCheck}
-            disabled={checking || !repo.includes("/")}
+            disabled={checking}
             className="btn-secondary text-xs"
           >
-            {checking ? "جارٍ الفحص..." : "فحص الآن"}
+            {checking ? "جارٍ الفحص..." : "فحص التحديثات"}
           </button>
         </div>
       </div>

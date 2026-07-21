@@ -7,6 +7,10 @@ import { Capacitor } from "@capacitor/core";
 const REPO_KEY = "lgp-ota-repo";
 const LAST_CHECK_KEY = "lgp-ota-last-check";
 
+// Default repo baked into the app — GitHub Actions publishes releases here
+// automatically on every push to main. Users can still override via localStorage.
+const DEFAULT_REPO = "moaied3/humble-press-joy";
+
 export const APP_VERSION: string =
   typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.0";
 
@@ -15,10 +19,10 @@ export function getRepo(): string {
     return (
       localStorage.getItem(REPO_KEY) ||
       import.meta.env.VITE_OTA_REPO ||
-      ""
+      DEFAULT_REPO
     ).trim();
   } catch {
-    return "";
+    return DEFAULT_REPO;
   }
 }
 
