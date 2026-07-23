@@ -253,6 +253,21 @@ export async function saveBlobToDevice(name: string, blob: Blob): Promise<string
   return res.uri;
 }
 
+/**
+ * Native-safe download: bypasses WebView `fetch()` which fails with
+ * "Failed to fetch" for large Telegram file URLs on Android.
+ */
+export async function downloadUrlToDevice(url: string, name: string): Promise<string | null> {
+  if (!isNative()) return null;
+  const res = await Filesystem.downloadFile({
+    url,
+    path: name,
+    directory: Directory.Documents,
+    recursive: true,
+  });
+  return res.path ?? null;
+}
+
 // ------- Haptics -------------------------------------------------------------
 export async function tap(style: "light" | "medium" | "heavy" = "light") {
   if (!isNative()) return;
