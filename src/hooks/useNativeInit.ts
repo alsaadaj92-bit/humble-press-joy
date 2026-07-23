@@ -41,19 +41,10 @@ export function useNativeInit() {
       void SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => undefined);
     })();
 
-    // Kick off a background scan whenever the app opens or resumes — this
-    // ensures newly-added photos in the phone gallery appear here without a
-    // manual action, just like Google Photos.
-    const runScan = () => {
-      void (async () => {
-        try {
-          if (!canScanDeviceGallery()) return;
-          // Don't gate on camera perm — the Media plugin has its own perm.
-          // If it's missing the call throws and we swallow silently.
-          await scanDeviceGallery();
-        } catch { /* ignore */ }
-      })();
-    };
+    // Device-gallery import now uses the OS multi-select via
+    // Camera.pickImages (see deviceMedia.ts). It requires an explicit user
+    // gesture, so we DO NOT trigger it on launch — the empty-state button
+    // and the FAB "import from gallery" action call it instead.
 
     // Preload on-device AI models if the user opted in via the wizard.
     void (async () => {
@@ -61,8 +52,7 @@ export function useNativeInit() {
       if (flag === "1") preloadInBackground();
     })();
 
-    // First tick — wait a beat so wizard/permissions can settle.
-    const t = window.setTimeout(runScan, 1200);
+
 
     const runSync = () => {
       void runSyncCycle().catch(() => undefined);
@@ -70,31 +60,18 @@ export function useNativeInit() {
 
     const appSub = App.addListener("appStateChange", (s) => {
       logNative("app", `state ${s.isActive ? "active" : "background"}`);
-      if (s.isActive) {
-        runSync();
-        runScan();
-      }
+      if (s.isActive) runSync();
     });
     const netSub = Network.addListener("networkStatusChange", (s) => {
       logNative("network", `${s.connected ? "online" : "offline"} (${s.connectionType})`);
       if (s.connected) runSync();
     });
 
-    // Silently re-check permissions on resume (no dialog if already answered).
-    const permSub = App.addListener("appStateChange", async (s) => {
-      if (!s.isActive) return;
-      try {
-        if ((await checkCameraPermission()) === "prompt") await requestCameraPermission();
-        if ((await checkNotifPermission()) === "prompt") await requestNotifPermission();
-        if ((await checkLocationPermission()) === "prompt") await requestLocationPermission();
-      } catch { /* ignore */ }
-    });
 
     return () => {
-      window.clearTimeout(t);
       void appSub.then((h) => h.remove()).catch(() => undefined);
       void netSub.then((h) => h.remove()).catch(() => undefined);
-      void permSub.then((h) => h.remove()).catch(() => undefined);
     };
   }, []);
 }
+

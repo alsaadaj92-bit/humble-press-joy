@@ -1,115 +1,67 @@
-# خطة الإصلاح الشاملة — مطابقة Google Photos
+# خطة إصلاح جذرية — LocalGallery Pro
 
-بعد فحص الصور المرفقة والكود، هذه خطة تنفيذ متكاملة تُنجز دفعة واحدة.
+بعد قراءة الكود بعناية، هذه هي الأعطال الحقيقية والحلول.
 
-## 1) إصلاحات حرجة (Bugs)
+## 1) لماذا لا يظهر معرض الهاتف تلقائيًا؟
 
-**أ. الصور لا تظهر**
-- سبب جذري: `useResolvedAssets` يعتمد على مزوّد نشط قبل عرض الـ blob المحلي في بعض المسارات، و`useNativeInit` قد لا يستدعي `scanDeviceGallery` بعد منح إذن جديد.
-- الحل: عرض فوري من `asset.blob` عبر `URL.createObjectURL` **قبل** أي منطق مزوّد، تحرير الـ URLs عند التفريغ، وإعادة الفحص التلقائي عند تغيّر حالة الأذونات (event listener على `visibilitychange`).
+**السبب الجذري:** الدالة `scanDeviceGallery()` تعتمد على بلجن Capacitor مخصّص اسمه `LocalGalleryMedia` (في `src/lib/deviceMedia.ts` سطر 55، `src/lib/native.ts` سطر 23). هذا البلجن **غير موجود** في المشروع — لا يوجد له كود Java/Kotlin. لذلك:
 
-**ب. زر الرجوع لا يعمل (Android)**
-- إضافة `App.addListener('backButton')` من `@capacitor/app`: يغلق Lightbox → يخرج من Selection → يعود لتبويب "الصور" → ثم يخرج من التطبيق.
+- على Android → `registerPlugin("LocalGallery Media")` يُرجع كائنًا وهميًا، ونداء `requestGalleryPermissions()` يفشل بصمت.
+- الاحتياط ينتقل إلى `Camera.requestPermissions({ photos })`، لكن هذا صلاحية **الكاميرا للصور**، وليست صلاحية `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` المطلوبة على Android 13+.
+- حتى لو مُنحت، ‏`scanAndroidGallery()` يستدعي `LocalGalleryMedia.getDeviceMedia()` غير الموجود → يرمي فورًا، ولا تُدرج أي صور.
 
-**ج. زر تبديل شكل العرض (شبكة/مربعات/قائمة) لا يعمل**
-- ربط `DensityToggle` بالحالة الفعلية `density` في `Index.tsx` وتمريرها إلى `PhotoGrid` (حالياً معزول).
+**النتيجة:** لا تظهر أي صورة من المعرض، ولا يظهر أي طلب صلاحية حقيقي.
 
-**د. الذكريات لا تتغير تلقائياً**
-- إضافة carousel مع `setInterval` كل 5 ثوانٍ + swipe gestures، ودوران عبر الذكريات الأسبوعية/السنوية.
+**الحل:**
+- إزالة الاعتماد على البلجن الوهمي.
+- استخدام بلجن جاهز موثّق: `@capacitor/media` غير موجود، لكن `@capawesome/capacitor-file-picker` + `@capacitor-community/media` يعملان على iOS فقط. الأنسب لأندرويد: **`@capgo/capacitor-native-photo-gallery`** أو **`@capawesome/capacitor-android-content`**.
+- الحل العملي المضمون: استخدام **Storage Access Framework** عبر بلجن `capacitor-plugin-safe-area` + `@capacitor/filesystem` — نطلب من المستخدم مرة واحدة اختيار مجلد `DCIM/Camera` و`Pictures`، ثم نمسحها دوريًا بـ `Filesystem.readdir()` (يعمل داخل Capacitor بدون بلجن مخصّص).
+- إضافة أذونات `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED` في `AndroidManifest.xml` عبر `scripts/prepare-android.mjs`.
+- استيراد كل الصور فورًا كـ `MediaAsset` مع `posterDataUrl` من مصغّرات مولّدة بـ `<canvas>`.
 
-## 2) مطابقة Google Photos (تصميم)
+## 2) لماذا الأذونات لا تُطلب؟
 
-**Top Bar** (مطابق للصور المرفقة):
-- شعار دوّار + "Photos" — نقاط إشعار + زر `+` + جرس + Avatar المستخدم
-- شريط بحث في الوسط مثل GPhotos الجديد
-- رقاقات (Chips) أسفل: ذكريات / أشخاص / أماكن — إخفاء الشرائط عند التمرير للأسفل، إظهارها للأعلى
+- `PermissionsWizard` يعمل فقط في أول تشغيل ثم يخزّن `wizardDone=1` في Preferences، ثم لا يظهر أبدًا.
+- `useNativeInit` يستدعي `checkCameraPermission()` فقط، ولا يفتح أي حوار للمعرض إذا رفض المستخدم.
 
-**Bottom Nav** (4 تبويبات مطابقة تماماً):
-- Photos (الرئيسي) — Collections (المكتبة) — Create (إنشاء) — Search (بحث)
-- الأيقونة النشطة تحصل على خلفية "pill" زرقاء شفافة
+**الحل:** فتح `PermissionsWizard` تلقائيًا عند كل بدء طالما أن أي إذن حرج (`gallery`, `notifications`) ليس `granted`، مع زر واضح داخل الإعدادات لإعادة الطلب.
 
-**Collections/Library** (مطابق لصورك):
-- شبكة 2×N: Favourites, Bin, Screenshots, Archive
-- بلاطات كبيرة: Albums, On this device, People, Moments
-- قوائم: Screenshots, Videos, Documents, Utilities
+## 3) لماذا التطبيق لا يزامن تلقائيًا؟
 
-**Photos view**:
-- عناوين تاريخ يسارية "Sat 4 Jul" + زر تحديد + قائمة 3-نقاط لكل قسم
-- عرض full-bleed بدون هوامش
+- `useSyncLoop` صحيح، لكن الإعداد الافتراضي `mode: "manual"`. المستخدم لا يعلم بوجود إعداد.
+- **الحل:** تغيير الافتراضي إلى `auto-on-import`، وإظهار شارة "المزامنة نشطة" في `TopBar`.
 
-**Lightbox المحسّن**:
-- سحب لأعلى لعرض التفاصيل (info sheet)، سحب لأسفل للإغلاق
-- شريط thumbnails أسفل للتصفح السريع
-- Zoom بإصبعين + double-tap
-- انتقالات View Transitions محسّنة
+## 4) لماذا الذكريات فارغة؟
 
-**Profile Sheet** (مطابق لصورتك):
-- ضغط الـ Avatar يفتح Bottom Sheet: الاسم + البريد + استخدام التخزين (مع شريط تقدم) + Manage/Switch + قائمة إجراءات
+- `memories.ts` يبحث في `photoDb.assets` فقط عن صور بنفس اليوم من سنوات سابقة. لأن المعرض فارغ (المشكلة 1)، لا توجد ذكريات.
+- **الحل:** إصلاح المشكلة 1 يحلّها. إضافة "ذكريات هذا الأسبوع" و"أفضل لقطات الشهر" كبديل عندما لا توجد صور من سنوات سابقة.
 
-## 3) معالج الأذونات (First-Launch Wizard)
+## 5) العرض بدائي مقارنة بـ Google Photos
 
-شاشة كاملة عند أول تشغيل تطلب دفعة واحدة وبشرح واضح:
-1. الوصول لكل الصور والفيديوهات
-2. الكاميرا
-3. الإشعارات
-4. الموقع (لتفاصيل GPS)
-5. تعطيل تحسين البطارية (للمزامنة الخلفية)
-6. تشغيل: الفحص التلقائي، التنظيم بالذكاء الاصطناعي، الوجوه، OCR، المزامنة التلقائية
+- الشبكة الحالية `columns-2 md:columns-3` بدون تجميع زمني حقيقي، بدون رؤوس أقسام لاصقة، بدون تكبير بإيماءة على الشبكة.
+- **الحل:** إعادة بناء `PhotoGrid` باستخدام `react-virtuoso` للأداء + رؤوس شهر لاصقة + تكبير ديناميكي (2/3/4/5 أعمدة) + شريط تمرير زمني على اليمين.
 
-مع مفاتيح تشغيل/إيقاف لكل ميزة، ثم "متابعة". يُحفظ التنفيذ في `localStorage`.
+## 6) OCR لا ينجح — استبداله
 
-## 4) تجميع إضافاتنا في مكان واحد
+- Tesseract.wasm ثقيل (~15MB) وبطيء على الهاتف ونتائجه رديئة للعربية.
+- **الحل:** استبداله بـ **Google ML Kit Text Recognition** عبر بلجن `@capacitor-mlkit/text-recognition` — أسرع 20×، يعمل offline، يدعم العربية أصليًا.
 
-قسم جديد في المكتبة **"أدواتنا المتقدمة"** (Zero-Cloud Tools) يجمع:
-- Telegram Sync — E2EE Vault — Locked Folder — Face Clustering — CLIP Search — OCR — Duplicates — Magic Eraser — Doc Scanner — Live Albums — Backup/Restore — Places Map — Provider Rules — OTA Updates
+## خطة التنفيذ (بالترتيب)
 
-## 5) شاشة كاملة (Immersive Edge-to-Edge)
+1. **إصلاح استيراد المعرض** — إضافة الأذونات في Manifest، استبدال البلجن الوهمي بمسح `Filesystem` مباشر لـ `DCIM/Camera` و`Pictures/*`، توليد مصغّرات محليًا.
+2. **إظهار Wizard الأذونات دائمًا** حتى تُمنح أذونات المعرض والإشعارات.
+3. **تفعيل المزامنة التلقائية افتراضيًا** (`auto-on-import`) + مؤشر حالة في TopBar.
+4. **إعادة بناء PhotoGrid** بـ `react-virtuoso` + رؤوس شهر + شريط تمرير زمني.
+5. **استبدال OCR** بـ ML Kit (`@capacitor-mlkit/text-recognition`) مع Fallback إلى Tesseract على الويب فقط.
+6. **إصلاح الذكريات** بإضافة قواعد "هذا الأسبوع" و"لقطات الشهر".
+7. **تشغيل AutoPipeline تلقائيًا** فور أول استيراد ناجح (بدون سؤال).
 
-- `StatusBar.setOverlaysWebView({ overlay: true })` + `StatusBar.setStyle(Dark)` — شفافية كاملة
-- `NavigationBar.setTransparency(true)` (Android)
-- `viewport-fit=cover` في `index.html`
-- استخدام `env(safe-area-inset-*)` في التوب-بار والبوتوم-ناف
-- إخفاء شريط الحالة عند Lightbox
+## تفاصيل تقنية
 
-## القسم التقني
+- `AndroidManifest.xml`: `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE_DATA_SYNC`.
+- `deviceMedia.ts`: يُعاد كتابته ليستخدم `Filesystem.readdir({ path: 'DCIM/Camera', directory: Directory.ExternalStorage })` ثم `Filesystem.stat` + `Filesystem.readFile` (base64) للصور، مع cache للمصغّرات في IndexedDB.
+- `ocr.ts`: واجهة موحّدة `ocrImage(url)` تختار ML Kit في native و Tesseract في web.
+- `PhotoGrid.tsx`: `<GroupedVirtuoso>` مع `groupCounts` مبني من `timeline.groupByMonth()`.
+- Default: `syncSettings.mode = "auto-on-import"` في `photoDb.ts` (`DEFAULT_SYNC_SETTINGS`).
 
-**ملفات جديدة:**
-- `src/components/gallery/PermissionsWizard.tsx`
-- `src/components/gallery/ProfileSheet.tsx`
-- `src/components/gallery/AdvancedToolsHub.tsx`
-- `src/components/gallery/MemoriesCarousel.tsx`
-- `src/hooks/useBackButton.ts`
-- `src/hooks/useImmersive.ts`
-
-**ملفات تُعدَّل:**
-- `src/pages/Index.tsx` — ربط density، wizard، back button، immersive init
-- `src/components/gallery/TopBar.tsx` — تخطيط GPhotos الجديد
-- `src/components/gallery/MobileNav.tsx` — Photos/Collections/Create/Search
-- `src/components/gallery/LibraryHub.tsx` — تخطيط Collections الجديد
-- `src/components/gallery/Lightbox.tsx` — thumbnails, swipe, zoom
-- `src/components/gallery/MemoriesPanel.tsx` → carousel تلقائي
-- `src/hooks/useNativeInit.ts` — إعادة فحص عند العودة للتطبيق
-- `src/hooks/useResolvedAssets.ts` — أولوية مطلقة للـ blob
-- `index.html` — viewport-fit=cover
-- `capacitor.config.ts` — StatusBar overlay
-- `scripts/prepare-android.mjs` — تفعيل edge-to-edge في `styles.xml`
-
-**Capacitor plugins مطلوبة (تُثبَّت تلقائياً):**
-- `@capacitor/app` (زر الرجوع)
-- `@capacitor/status-bar` (شفافية)
-- `@capawesome/capacitor-android-edge-to-edge-support`
-
-**اختبار:**
-- Typecheck + build بعد كل موجة
-- تحقق أن `photoDb.assets` يحتوي blob قابل للعرض دون مزوّد
-- تحقق أن الـ URLs تُحرَّر (لا تسريب ذاكرة)
-
-## التنفيذ
-
-سيتم بأربع موجات متتابعة داخل نفس الرد بعد الموافقة:
-1. Infrastructure (plugins, back-button, immersive, wizard)
-2. Bug fixes (photos display, density toggle, back)
-3. UI parity (TopBar/BottomNav/Library/ProfileSheet)
-4. Polish (Lightbox، Memories carousel، Advanced Tools Hub)
-
-بعد الموافقة سأنفّذ كل شيء دفعة واحدة.
+بعد الموافقة سأنفّذ الخطوات بالترتيب مع اختبار كل خطوة قبل الانتقال للتالية.
