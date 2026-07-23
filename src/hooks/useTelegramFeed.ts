@@ -113,7 +113,7 @@ async function insertFromUpdate(u: RawUpdate) {
  * last update_id in kv so we don't re-ingest on reload. Every image/video
  * message becomes a telegram-remote MediaAsset that the gallery can render.
  */
-export function useTelegramFeed(enabled: boolean, intervalMs = 15000) {
+export function useTelegramFeed(enabled: boolean, intervalMs = 15000, trigger: number = 0) {
   const running = useRef(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastPolledAt, setLastPolledAt] = useState<number | null>(null);
