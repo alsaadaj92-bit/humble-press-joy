@@ -13,6 +13,11 @@ import {
 } from "@/lib/photoDb";
 import { telegramSendDocument } from "@/lib/providers/telegram";
 import { notify } from "@/lib/notifications";
+import {
+  startSyncForegroundService,
+  updateSyncForegroundService,
+  stopSyncForegroundService,
+} from "@/lib/native";
 
 const SETTINGS_KEY = "syncSettings";
 
@@ -101,6 +106,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   if (unsynced.length === 0) return { processed: 0, failed: 0 };
 
   emit({ running: true, total: unsynced.length, done: 0, failed: 0, currentName: undefined, lastError: undefined });
+  void startSyncForegroundService("جاري المزامنة", `0 / ${unsynced.length}`);
   let done = 0;
   let failed = 0;
   try {
@@ -113,6 +119,12 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
         continue;
       }
       emit({ currentName: asset.name });
+      void updateSyncForegroundService(
+        "جاري المزامنة",
+        `${done + 1} / ${unsynced.length} · ${asset.name}`,
+        done,
+        unsynced.length,
+      );
       try {
         await uploadOne(asset, cfg.botToken, cfg.chatId, now.freeBlobAfterSync);
         done++;
@@ -124,6 +136,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
     }
   } finally {
     emit({ running: false, currentName: undefined });
+    void stopSyncForegroundService();
   }
 
   if (done > 0 || failed > 0) {
