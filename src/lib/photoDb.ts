@@ -55,7 +55,8 @@ export interface SyncSettings {
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   mode: "auto",
   wifiOnly: false,
-  maxFileMb: 200,
+  // 0 = unlimited. Telegram itself may still reject files above its Bot API limit.
+  maxFileMb: 0,
   paused: false,
   freeBlobAfterSync: true,
 };

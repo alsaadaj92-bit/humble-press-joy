@@ -98,7 +98,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
     for (const asset of unsynced) {
       const now = await getSyncSettings();
       if (now.paused) break;
-      if (asset.size > now.maxFileMb * 1024 * 1024) {
+      if (now.maxFileMb > 0 && asset.size > now.maxFileMb * 1024 * 1024) {
         failed++;
         emit({ failed, lastError: `تجاوز الحد: ${asset.name}` });
         continue;

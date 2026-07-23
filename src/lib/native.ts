@@ -18,9 +18,27 @@ type NativePermissionState = "granted" | "denied" | "prompt" | "prompt-with-rati
 interface LocalGalleryMediaPlugin {
   checkGalleryPermissions(): Promise<{ media: NativePermissionState }>;
   requestGalleryPermissions(): Promise<{ media: NativePermissionState }>;
+  scanGallery(options?: { offset?: number; limit?: number }): Promise<{
+    total?: number;
+    items: NativeGalleryAsset[];
+  }>;
+  installApk(options: { url: string }): Promise<{ ok: boolean }>;
 }
 
 const LocalGalleryMedia = registerPlugin<LocalGalleryMediaPlugin>("LocalGalleryMedia");
+
+export interface NativeGalleryAsset {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  date: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+  kind: "image" | "video";
+  webPath: string;
+}
 
 // ------- Camera --------------------------------------------------------------
 async function photoToFile(p: Photo, prefix: string): Promise<File | null> {
@@ -106,6 +124,17 @@ export async function checkGalleryPermission(): Promise<"granted" | "denied" | "
       return "unknown";
     }
   }
+}
+
+export async function scanNativeGalleryBatch(offset = 0, limit = 80) {
+  if (!isNative()) return { total: 0, items: [] as NativeGalleryAsset[] };
+  return LocalGalleryMedia.scanGallery({ offset, limit });
+}
+
+export async function installApkFromUrl(url: string): Promise<boolean> {
+  if (!isNative()) return false;
+  const res = await LocalGalleryMedia.installApk({ url });
+  return !!res.ok;
 }
 
 // ------- Local notifications --------------------------------------------------

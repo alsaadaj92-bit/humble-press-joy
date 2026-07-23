@@ -126,15 +126,23 @@ export function SettingsPage({ onBack }: Props) {
               checked={settings.paused}
               onChange={(v) => setSyncSettings({ paused: v })}
             />
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">الحد الأقصى لحجم الملف: {settings.maxFileMb} MB</label>
-              <input
-                type="range" min={10} max={2000} step={10}
-                value={settings.maxFileMb}
-                onChange={(e) => setSyncSettings({ maxFileMb: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
+            <Toggle
+              label="حجم الملفات مفتوح"
+              hint="لن يمنع التطبيق أي حجم؛ إذا رفض تليكرام ملفاً ضخماً سيظهر الخطأ في التشخيصات."
+              checked={settings.maxFileMb === 0}
+              onChange={(v) => setSyncSettings({ maxFileMb: v ? 0 : 2000 })}
+            />
+            {settings.maxFileMb > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">الحد الأقصى لحجم الملف: {settings.maxFileMb} MB</label>
+                <input
+                  type="range" min={10} max={2000} step={10}
+                  value={settings.maxFileMb}
+                  onChange={(e) => setSyncSettings({ maxFileMb: Number(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
         </section>
 

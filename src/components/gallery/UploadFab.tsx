@@ -51,7 +51,7 @@ export function UploadFab({ compact }: Props) {
     setBusy(true);
     try {
       const n = await scanDeviceGallery();
-      if (n === 0) toast.info("لم يتم استيراد شيء — تحقق من إذن المعرض");
+    if (n === 0) toast.info("لم يتم استيراد شيء — امنح صلاحية كل الصور أو اختر الصور من المنتقي");
       else toast.success(`تم استيراد ${n} عنصر`);
     } catch (e) {
       toast.error("فشل الاستيراد: " + (e instanceof Error ? e.message : String(e)));
@@ -63,7 +63,7 @@ export function UploadFab({ compact }: Props) {
     setBusy(true);
     try {
       const n = await importWebFiles(list);
-      toast.success(`أُضيفت ${n} صورة`);
+      toast.success(`أُضيف ${n} عنصر`);
     } catch (e) {
       toast.error("فشل الاستيراد: " + (e instanceof Error ? e.message : String(e)));
     } finally { setBusy(false); }
