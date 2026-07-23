@@ -87,17 +87,8 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   const cfg = await photoDb.providers.get("telegram");
   if (!cfg?.configured || !cfg.botToken || !cfg.chatId) return { processed: 0, failed: 0 };
 
-  const pending = await photoDb.assets
-    .where("[provider+syncedAt]")
-    .between(["device", Dexie_MinKey], ["device", Dexie_MinKey], true, true)
-    .toArray()
-    .catch(async () => {
-      // Fallback if compound index isn't available yet.
-      const all = await photoDb.assets.where("provider").equals("device").toArray();
-      return all.filter((a) => a.syncedAt == null);
-    });
-
-  const unsynced = pending.filter((a) => a.syncedAt == null && a.blob);
+  const deviceAssets = await photoDb.assets.where("provider").equals("device").toArray();
+  const unsynced = deviceAssets.filter((a) => a.syncedAt == null && a.blob);
   if (unsynced.length === 0) return { processed: 0, failed: 0 };
 
   emit({ running: true, total: unsynced.length, done: 0, failed: 0, currentName: undefined, lastError: undefined });
