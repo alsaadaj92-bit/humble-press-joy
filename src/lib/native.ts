@@ -23,6 +23,9 @@ interface LocalGalleryMediaPlugin {
     items: NativeGalleryAsset[];
   }>;
   installApk(options: { url: string }): Promise<{ ok: boolean }>;
+  startSyncService(options: { title: string; text: string }): Promise<{ ok: boolean }>;
+  updateSyncService(options: { title: string; text: string; progress?: number; max?: number }): Promise<{ ok: boolean }>;
+  stopSyncService(): Promise<{ ok: boolean }>;
 }
 
 const LocalGalleryMedia = registerPlugin<LocalGalleryMediaPlugin>("LocalGalleryMedia");
@@ -135,6 +138,24 @@ export async function installApkFromUrl(url: string): Promise<boolean> {
   if (!isNative()) return false;
   const res = await LocalGalleryMedia.installApk({ url });
   return !!res.ok;
+}
+
+// ------- Foreground sync service --------------------------------------------
+export async function startSyncForegroundService(title: string, text: string): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const r = await LocalGalleryMedia.startSyncService({ title, text });
+    return !!r.ok;
+  } catch { return false; }
+}
+export async function updateSyncForegroundService(title: string, text: string, progress?: number, max?: number): Promise<void> {
+  if (!isNative()) return;
+  try { await LocalGalleryMedia.updateSyncService({ title, text, progress, max }); }
+  catch { /* noop */ }
+}
+export async function stopSyncForegroundService(): Promise<void> {
+  if (!isNative()) return;
+  try { await LocalGalleryMedia.stopSyncService(); } catch { /* noop */ }
 }
 
 // ------- Local notifications --------------------------------------------------
