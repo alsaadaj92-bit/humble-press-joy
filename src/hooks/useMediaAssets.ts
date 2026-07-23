@@ -17,7 +17,9 @@ export function useMediaAssets(filter: Filter = { kind: "all" }): MediaAsset[] {
         case "unsynced-device":
           return rows.filter((r) => r.provider === "device" && r.syncedAt == null);
         case "telegram-remote":
-          return rows.filter((r) => r.provider === "telegram-remote");
+          // Show every asset that has a Telegram file id, including photos
+          // uploaded by older app versions that kept provider="device" after sync.
+          return rows.filter((r) => r.provider === "telegram-remote" || !!r.remoteFileId);
         case "provider":
           return rows.filter((r) => r.provider === filter.provider);
         default:
