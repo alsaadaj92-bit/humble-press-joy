@@ -24,6 +24,8 @@ export interface MockPhoto {
   mime?: string;
   /** Poster/thumbnail JPEG for videos and HEIC (Telegram-served thumb). */
   posterSrc?: string;
+}
+
 
 const HEIGHTS = [320, 400, 500, 380, 460, 540, 360, 420, 480, 600, 340, 520];
 const WIDTHS = [400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400];
