@@ -152,7 +152,7 @@ export function useTelegramFeed(enabled: boolean, intervalMs = 15000, trigger: n
     void poll();
     const id = window.setInterval(() => { if (!cancelled) void poll(); }, intervalMs);
     return () => { cancelled = true; window.clearInterval(id); };
-  }, [enabled, intervalMs]);
+  }, [enabled, intervalMs, trigger]);
 
   return { lastError, lastPolledAt };
 }
