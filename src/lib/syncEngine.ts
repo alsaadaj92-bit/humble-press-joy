@@ -129,8 +129,3 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   }
   return { processed: done, failed };
 }
-
-// Dexie exposes min/max symbol via Dexie namespace — imported lazily to keep
-// this file free of a hard dep beyond `dexie`'s runtime.
-import Dexie from "dexie";
-const Dexie_MinKey = Dexie.minKey as unknown as null;
