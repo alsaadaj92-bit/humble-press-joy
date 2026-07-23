@@ -124,7 +124,7 @@ export function SettingsPage({ onBack, onOpenDiagnostics }: Props) {
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
             />
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={save}
               className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
@@ -138,7 +138,20 @@ export function SettingsPage({ onBack, onOpenDiagnostics }: Props) {
               {testing && <Loader2 className="h-4 w-4 animate-spin" />}
               اختبار الاتصال
             </button>
+            <a
+              href="https://t.me/BotFather?start=setprivacy"
+              target="_blank" rel="noreferrer"
+              onClick={() => {
+                try { navigator.clipboard.writeText("/setprivacy"); toast.info("نُسخ /setprivacy — ألصقه في BotFather"); } catch { /* noop */ }
+              }}
+              className="flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold"
+            >
+              <ExternalLink className="h-4 w-4" /> فتح BotFather
+            </a>
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            زر «فتح BotFather» يفتح تليكرام وينسخ الأمر <code dir="ltr">/setprivacy</code> — ألصقه، اختر البوت، ثم Disable. لا يمكن للتطبيق تنفيذ ذلك تلقائياً لأن الأمر لا يوفّره Bot API — بل عبر محادثة BotFather فقط.
+          </p>
         </section>
 
         {/* Sync */}
