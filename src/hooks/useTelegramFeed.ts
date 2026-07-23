@@ -187,29 +187,50 @@ export async function resolveRemoteUrl(asset: MediaAsset): Promise<string | null
   return telegramFileUrl(cfg.botToken, path);
 }
 
-export function useRemoteAssetUrls(assets: MediaAsset[]): Map<string, string> {
-  const [urls, setUrls] = useState<Map<string, string>>(new Map());
+export async function resolveThumbUrl(asset: MediaAsset): Promise<string | null> {
+  if (!asset.thumbFileId) return null;
+  const cfg = await photoDb.providers.get("telegram");
+  if (!cfg?.botToken) return null;
+  if (asset.thumbFilePath) return telegramFileUrl(cfg.botToken, asset.thumbFilePath);
+  try {
+    const path = await telegramGetFilePath(cfg.botToken, asset.thumbFileId);
+    await photoDb.assets.update(asset.id, { thumbFilePath: path });
+    return telegramFileUrl(cfg.botToken, path);
+  } catch { return null; }
+}
+
+export interface RemoteUrls { full: Map<string, string>; thumb: Map<string, string> }
+
+export function useRemoteAssetUrls(assets: MediaAsset[]): RemoteUrls {
+  const [urls, setUrls] = useState<RemoteUrls>({ full: new Map(), thumb: new Map() });
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const next = new Map(urls);
+      const full = new Map(urls.full);
+      const thumb = new Map(urls.thumb);
       let changed = false;
       for (const a of assets) {
-        if (next.has(a.id)) continue;
+        // Thumbnails: always resolve when Telegram sent one (HEIC + videos).
+        if (a.thumbFileId && !thumb.has(a.id)) {
+          const t = await resolveThumbUrl(a);
+          if (cancelled) return;
+          if (t) { thumb.set(a.id, t); changed = true; }
+        }
+        if (full.has(a.id)) continue;
         if (a.remoteFileId) {
           try {
             const url = await resolveRemoteUrl(a);
             if (cancelled) return;
-            if (url) { next.set(a.id, url); changed = true; }
+            if (url) { full.set(a.id, url); changed = true; }
           } catch { /* skip */ }
           continue;
         }
         if (a.blob) {
-          next.set(a.id, URL.createObjectURL(a.blob));
+          full.set(a.id, URL.createObjectURL(a.blob));
           changed = true;
         }
       }
-      if (changed && !cancelled) setUrls(next);
+      if (changed && !cancelled) setUrls({ full, thumb });
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
