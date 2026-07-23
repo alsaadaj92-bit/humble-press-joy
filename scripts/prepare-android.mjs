@@ -68,6 +68,7 @@ const PERMS = [
   '<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>',
   '<uses-permission android:name="android.permission.WAKE_LOCK"/>',
   '<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>',
+  '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>',
   '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>',
 ];
 
@@ -98,6 +99,17 @@ const providerBlock = `
 
 if (!xml.includes("android.support.FILE_PROVIDER_PATHS")) {
   xml = xml.replace(/\s*<\/application>/, `${providerBlock}\n    </application>`);
+  added++;
+}
+
+const serviceBlock = `
+        <service
+            android:name=".SyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />`;
+
+if (!xml.includes(".SyncForegroundService")) {
+  xml = xml.replace(/\s*<\/application>/, `${serviceBlock}\n    </application>`);
   added++;
 }
 
@@ -426,6 +438,111 @@ public class LocalGalleryMediaPlugin extends Plugin {
             call.reject("Install failed: " + e.getMessage(), e);
         }
     }
+
+    @PluginMethod
+    public void startSyncService(PluginCall call) {
+        String title = call.getString("title", "جاري المزامنة");
+        String text = call.getString("text", "");
+        Intent svc = new Intent(getContext(), SyncForegroundService.class);
+        svc.setAction("START");
+        svc.putExtra("title", title);
+        svc.putExtra("text", text);
+        if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(svc);
+        else getContext().startService(svc);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void updateSyncService(PluginCall call) {
+        String title = call.getString("title", "جاري المزامنة");
+        String text = call.getString("text", "");
+        Intent svc = new Intent(getContext(), SyncForegroundService.class);
+        svc.setAction("UPDATE");
+        svc.putExtra("title", title);
+        svc.putExtra("text", text);
+        svc.putExtra("progress", call.getInt("progress", 0));
+        svc.putExtra("max", call.getInt("max", 0));
+        if (Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(svc);
+        else getContext().startService(svc);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void stopSyncService(PluginCall call) {
+        Intent svc = new Intent(getContext(), SyncForegroundService.class);
+        getContext().stopService(svc);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
+    }
+}
+`);
+
+const syncServicePath = resolve(javaDir, "SyncForegroundService.java");
+writeIfChanged(syncServicePath, `package ${APP_ID};
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.os.Build;
+import android.os.IBinder;
+
+import androidx.core.app.NotificationCompat;
+
+public class SyncForegroundService extends Service {
+    private static final String CHANNEL_ID = "sync_channel";
+    private static final int NOTIF_ID = 4711;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, "المزامنة", NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("إشعار مستمر أثناء رفع الصور إلى تليكرام");
+            NotificationManager mgr = getSystemService(NotificationManager.class);
+            if (mgr != null) mgr.createNotificationChannel(ch);
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        String action = intent != null ? intent.getAction() : null;
+        if ("STOP".equals(action)) { stopSelf(); return START_NOT_STICKY; }
+
+        String title = intent != null ? intent.getStringExtra("title") : "جاري المزامنة";
+        String text = intent != null ? intent.getStringExtra("text") : "";
+        int progress = intent != null ? intent.getIntExtra("progress", 0) : 0;
+        int max = intent != null ? intent.getIntExtra("max", 0) : 0;
+
+        Intent openIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        PendingIntent pi = openIntent != null
+            ? PendingIntent.getActivity(this, 0, openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+            : null;
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title != null ? title : "جاري المزامنة")
+            .setContentText(text != null ? text : "")
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW);
+        if (pi != null) b.setContentIntent(pi);
+        if (max > 0) b.setProgress(max, progress, false);
+
+        Notification n = b.build();
+        if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(NOTIF_ID, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(NOTIF_ID, n);
+        }
+        return START_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
 }
 `);
 
