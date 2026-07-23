@@ -9,9 +9,12 @@ import {
   requestCameraPermission,
   requestLocationPermission,
   requestNotifPermission,
+  checkNotifPermission,
+  checkGalleryPermission,
 } from "@/lib/native";
 import { canScanDeviceGallery, scanDeviceGallery } from "@/lib/deviceMedia";
 import { preloadInBackground } from "@/lib/preloadModels";
+
 
 const KEY = "lp:wizard:done";
 
@@ -39,8 +42,21 @@ export function PermissionsWizard() {
 
   useEffect(() => {
     void (async () => {
-      const done = await prefGet(KEY);
-      if (!done) setOpen(true);
+      // Re-open the wizard on every launch until the user has actually granted
+      // the two critical permissions (gallery + notifications). "Skipped" no
+      // longer suppresses it — silent failures are exactly what got us stuck
+      // with an empty gallery for weeks.
+      if (!isNative()) {
+        const done = await prefGet(KEY);
+        if (!done) setOpen(true);
+        return;
+      }
+      try {
+        const [g, n] = await Promise.all([checkGalleryPermission(), checkNotifPermission()]);
+        if (g !== "granted" || n !== "granted") setOpen(true);
+      } catch {
+        setOpen(true);
+      }
     })();
   }, []);
 
@@ -55,7 +71,8 @@ export function PermissionsWizard() {
     setBusy(true);
     try {
       if (isNative()) {
-        // ask all at once
+        // Ask camera + notif + location up-front. Gallery is requested by the
+        // actual import call (Camera.pickImages) so the OS shows its picker.
         await Promise.allSettled([
           requestCameraPermission(),
           requestNotifPermission(),
@@ -64,23 +81,22 @@ export function PermissionsWizard() {
       } else if ("Notification" in window && Notification.permission === "default") {
         try { await Notification.requestPermission(); } catch { /* ignore */ }
       }
-      // persist toggles
       for (const [k, v] of Object.entries(flags)) {
         await prefSet(`lp:flag:${k}`, v ? "1" : "0");
       }
       await prefSet(KEY, "1");
       toast.success("تم إعداد التطبيق — أهلاً بك!");
-      // Kick off first scan immediately
+      // Kick off the OS multi-select right now if user wants gallery import.
       if (flags.autoScan && canScanDeviceGallery()) {
         void scanDeviceGallery().catch(() => undefined);
       }
-      // Prime AI models (faces / CLIP / OCR) so they work offline afterwards.
       if (flags.aiPipeline) preloadInBackground();
     } finally {
       setBusy(false);
       setOpen(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-background text-foreground safe-top safe-bottom">
