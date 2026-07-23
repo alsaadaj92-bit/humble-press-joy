@@ -3,6 +3,7 @@
 // The repo is configurable at runtime (Settings) and falls back to VITE_OTA_REPO.
 
 import { Capacitor } from "@capacitor/core";
+import { installApkFromUrl } from "@/lib/native";
 
 const REPO_KEY = "lgp-ota-repo";
 const LAST_CHECK_KEY = "lgp-ota-last-check";
@@ -98,10 +99,14 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
 }
 
 /** Opens the APK download URL in the system browser (Android will hand off to installer). */
-export function launchApkInstall(apkUrl: string) {
+export async function launchApkInstall(apkUrl: string) {
   if (Capacitor.isNativePlatform()) {
-    // Opening in a new window is intercepted by Capacitor and routed to the system browser,
-    // which triggers Android's package installer flow for APK MIME types.
+    try {
+      const started = await installApkFromUrl(apkUrl);
+      if (started) return;
+    } catch {
+      /* fallback below */
+    }
     window.open(apkUrl, "_system");
   } else {
     window.open(apkUrl, "_blank", "noopener,noreferrer");

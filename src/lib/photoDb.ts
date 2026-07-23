@@ -28,6 +28,8 @@ export interface MediaAsset {
   posterDataUrl?: string;
   /** Original blob when imported from the device. Removed once synced to save space. */
   blob?: Blob;
+  /** Native MediaStore/WebView URL for device media. Metadata only; media bytes stay in the phone gallery. */
+  localUri?: string;
   /** Telegram fileId once uploaded / when discovered in the remote feed. */
   remoteFileId?: string;
   remoteMessageId?: number;
@@ -55,7 +57,8 @@ export interface SyncSettings {
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   mode: "auto",
   wifiOnly: false,
-  maxFileMb: 200,
+  // 0 = unlimited. Telegram itself may still reject files above its Bot API limit.
+  maxFileMb: 0,
   paused: false,
   freeBlobAfterSync: true,
 };

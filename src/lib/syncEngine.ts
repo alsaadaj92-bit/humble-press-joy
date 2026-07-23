@@ -64,15 +64,24 @@ function isWifiLike() {
 }
 
 async function uploadOne(asset: MediaAsset, botToken: string, chatId: string, freeBlob: boolean) {
-  if (!asset.blob) throw new Error("لا يوجد ملف محلي للرفع");
-  const file = new File([asset.blob], asset.name, { type: asset.mime || "application/octet-stream" });
+  let blob = asset.blob;
+  if (!blob && asset.localUri) {
+    const response = await fetch(asset.localUri);
+    if (!response.ok) throw new Error(`تعذر قراءة الملف المحلي: ${response.status}`);
+    blob = await response.blob();
+  }
+  if (!blob) throw new Error("لا يوجد ملف محلي للرفع");
+  const file = new File([blob], asset.name, { type: asset.mime || blob.type || "application/octet-stream" });
   const res = await telegramSendDocument(botToken, chatId, file);
   const patch: Partial<MediaAsset> = {
     syncedAt: Date.now(),
     remoteFileId: res.fileId,
     remoteMessageId: res.messageId,
   };
-  if (freeBlob) patch.blob = undefined;
+  if (freeBlob) {
+    patch.blob = undefined;
+    patch.localUri = undefined;
+  }
   await photoDb.assets.update(asset.id, patch);
 }
 
@@ -88,7 +97,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   if (!cfg?.configured || !cfg.botToken || !cfg.chatId) return { processed: 0, failed: 0 };
 
   const deviceAssets = await photoDb.assets.where("provider").equals("device").toArray();
-  const unsynced = deviceAssets.filter((a) => a.syncedAt == null && a.blob);
+  const unsynced = deviceAssets.filter((a) => a.syncedAt == null && (a.blob || a.localUri));
   if (unsynced.length === 0) return { processed: 0, failed: 0 };
 
   emit({ running: true, total: unsynced.length, done: 0, failed: 0, currentName: undefined, lastError: undefined });
@@ -98,7 +107,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
     for (const asset of unsynced) {
       const now = await getSyncSettings();
       if (now.paused) break;
-      if (asset.size > now.maxFileMb * 1024 * 1024) {
+      if (now.maxFileMb > 0 && asset.size > now.maxFileMb * 1024 * 1024) {
         failed++;
         emit({ failed, lastError: `تجاوز الحد: ${asset.name}` });
         continue;
