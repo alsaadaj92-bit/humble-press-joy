@@ -120,7 +120,6 @@ writeIfChanged(pluginPath, `package ${APP_ID};
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -158,7 +157,8 @@ import java.util.Comparator;
 @CapacitorPlugin(
     name = "LocalGalleryMedia",
     permissions = {
-        @Permission(strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED }, alias = "media13"),
+        @Permission(strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO }, alias = "media13"),
+        @Permission(strings = { Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED }, alias = "media14Selected"),
         @Permission(strings = { Manifest.permission.READ_EXTERNAL_STORAGE }, alias = "mediaLegacy")
     }
 )
@@ -207,7 +207,13 @@ public class LocalGalleryMediaPlugin extends Plugin {
             call.resolve(permissionResult());
             return;
         }
-        requestPermissionForAlias(Build.VERSION.SDK_INT >= 33 ? "media13" : "mediaLegacy", call, "galleryPermsCallback");
+        if (Build.VERSION.SDK_INT >= 34) {
+            requestPermissionForAliases(new String[] { "media13", "media14Selected" }, call, "galleryPermsCallback");
+        } else if (Build.VERSION.SDK_INT >= 33) {
+            requestPermissionForAlias("media13", call, "galleryPermsCallback");
+        } else {
+            requestPermissionForAlias("mediaLegacy", call, "galleryPermsCallback");
+        }
     }
 
     @PermissionCallback
