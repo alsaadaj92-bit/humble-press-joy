@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Bug, Check, ExternalLink, Loader2 } from "lucide-react";
 import { photoDb } from "@/lib/photoDb";
 import { saveProviderConfig, setActiveProvider } from "@/lib/providers";
 import { telegramTest } from "@/lib/providers/telegram";
 import { useProviders } from "@/hooks/useProviders";
 import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { setSyncSettings } from "@/lib/syncEngine";
-import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { cn } from "@/lib/utils";
 import { checkForUpdate, launchApkInstall, type UpdateInfo } from "@/lib/ota";
 
-interface Props { onBack: () => void }
+interface Props { onBack: () => void; onOpenDiagnostics: () => void }
 
-export function SettingsPage({ onBack }: Props) {
+export function SettingsPage({ onBack, onOpenDiagnostics }: Props) {
   const { providers } = useProviders();
   const tg = providers.get("telegram");
   const settings = useSyncSettings();

@@ -3,12 +3,14 @@ import { MobileNav, type Tab } from "@/components/gallery/MobileNav";
 import { SyncScreen } from "@/components/gallery/SyncScreen";
 import { TelegramScreen } from "@/components/gallery/TelegramScreen";
 import { SettingsPage } from "@/components/gallery/SettingsPage";
+import { DiagnosticsPage } from "@/components/gallery/DiagnosticsPage";
 import { PermissionsWizard } from "@/components/gallery/PermissionsWizard";
 import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useNativeInit } from "@/hooks/useNativeInit";
 import { useBackButton } from "@/hooks/useBackButton";
 
 const TAB_KEY = "ui:activeTab";
+type Route = Tab | "diagnostics";
 
 function loadTab(): Tab {
   try {
@@ -20,11 +22,13 @@ function loadTab(): Tab {
 
 const Index = () => {
   const [tab, setTabState] = useState<Tab>(loadTab);
+  const [route, setRoute] = useState<Route>(tab);
   useSyncLoop();
   useNativeInit();
 
   const setTab = useCallback((next: Tab) => {
     setTabState(next);
+    setRoute(next);
     try { localStorage.setItem(TAB_KEY, next); } catch { /* noop */ }
   }, []);
 
@@ -33,25 +37,36 @@ const Index = () => {
   }, [tab]);
 
   const back = useCallback(() => {
-    if (tab === "settings") { setTab("sync"); return true; }
-    if (tab === "telegram") { setTab("sync"); return true; }
+    if (route === "diagnostics") { setRoute("settings"); return true; }
+    if (route === "settings") { setTab("sync"); return true; }
+    if (route === "telegram") { setTab("sync"); return true; }
     return false;
-  }, [tab, setTab]);
+  }, [route, setTab]);
   useBackButton(back);
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <main className="min-h-screen">
-        {/* Keep every tab mounted so scroll, feed state, and pending work survive tab switches. */}
-        <div style={{ display: tab === "sync" ? "block" : "none" }}>
+        {/* Keep persistent tabs mounted so scroll and feed state survive switches. */}
+        <div style={{ display: route === "sync" ? "block" : "none" }}>
           <SyncScreen />
         </div>
-        <div style={{ display: tab === "telegram" ? "block" : "none" }}>
+        <div style={{ display: route === "telegram" ? "block" : "none" }}>
           <TelegramScreen />
         </div>
-        {tab === "settings" && <SettingsPage onBack={() => setTab("sync")} />}
+        {route === "settings" && (
+          <SettingsPage
+            onBack={() => setTab("sync")}
+            onOpenDiagnostics={() => setRoute("diagnostics")}
+          />
+        )}
+        {route === "diagnostics" && (
+          <DiagnosticsPage onBack={() => setRoute("settings")} />
+        )}
       </main>
-      {tab !== "settings" && <MobileNav active={tab} onChange={setTab} />}
+      {route !== "settings" && route !== "diagnostics" && (
+        <MobileNav active={tab} onChange={setTab} />
+      )}
       <PermissionsWizard />
     </div>
   );
