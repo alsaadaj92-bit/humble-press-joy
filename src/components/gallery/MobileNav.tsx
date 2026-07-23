@@ -1,47 +1,36 @@
-import { Images, LibraryBig, Search, Plus } from "lucide-react";
+import { Cloud, Settings as SettingsIcon, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Google Photos 4-tab bottom nav (Photos / Collections / Create / Search).
-const items = [
-  { id: "photos", label: "الصور", icon: Images },
-  { id: "library", label: "المكتبة", icon: LibraryBig },
-  { id: "create", label: "إنشاء", icon: Plus },
-  { id: "smart", label: "بحث", icon: Search },
+export type Tab = "sync" | "telegram" | "settings";
+
+const TABS: { id: Tab; label: string; icon: typeof Upload }[] = [
+  { id: "sync", label: "للمزامنة", icon: Upload },
+  { id: "telegram", label: "معرض تليكرام", icon: Cloud },
+  { id: "settings", label: "الإعدادات", icon: SettingsIcon },
 ];
 
-export function MobileNav({
-  active,
-  onSelect,
-}: {
-  active: string;
-  onSelect: (id: string) => void;
-}) {
+interface MobileNavProps {
+  active: Tab;
+  onChange: (t: Tab) => void;
+}
+
+export function MobileNav({ active, onChange }: MobileNavProps) {
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-background/95 backdrop-blur md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      {items.map((it) => {
-        const Icon = it.icon;
-        const isActive = active === it.id;
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 backdrop-blur safe-bottom">
+      {TABS.map((t) => {
+        const Icon = t.icon;
+        const activeTab = active === t.id;
         return (
           <button
-            key={it.id}
-            onClick={() => onSelect(it.id)}
+            key={t.id}
+            onClick={() => onChange(t.id)}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] transition",
-              isActive ? "text-primary" : "text-muted-foreground",
+              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
+              activeTab ? "text-primary" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            <div
-              className={cn(
-                "grid h-8 w-14 place-items-center rounded-full transition",
-                isActive && "bg-primary/20",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-            </div>
-            <span className={cn(isActive && "font-semibold")}>{it.label}</span>
+            <Icon className={cn("h-5 w-5", activeTab && "scale-110")} />
+            {t.label}
           </button>
         );
       })}
