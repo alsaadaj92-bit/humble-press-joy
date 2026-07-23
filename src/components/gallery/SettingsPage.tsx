@@ -231,7 +231,18 @@ export function SettingsPage({ onBack, onOpenDiagnostics }: Props) {
         </section>
 
         {/* Diagnostics */}
-        <DiagnosticsPanel />
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="mb-2 text-sm font-bold">مراقب الأخطاء</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            يسجّل الأخطاء والتحذيرات فقط لتوفير الأداء. افتحه في صفحة كاملة.
+          </p>
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            <Bug className="h-4 w-4" /> فتح مراقب الأخطاء
+          </button>
+        </section>
 
         {/* Danger */}
         <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
