@@ -18,6 +18,8 @@ import {
   updateSyncForegroundService,
   stopSyncForegroundService,
 } from "@/lib/native";
+import { Network } from "@capacitor/network";
+
 
 const SETTINGS_KEY = "syncSettings";
 
@@ -61,12 +63,20 @@ function emit(patch: Partial<SyncProgress>) {
 function isOnline() {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
-function isWifiLike() {
-  const c = (navigator as unknown as { connection?: { type?: string; effectiveType?: string } }).connection;
-  if (!c) return true;
-  if (c.type) return c.type === "wifi" || c.type === "ethernet";
-  return c.effectiveType === "4g" || c.effectiveType === "wifi";
+async function isWifiLike(): Promise<boolean> {
+  // Prefer Capacitor Network on device — navigator.connection lies inside WebView.
+  try {
+    const s = await Network.getStatus();
+    if (!s.connected) return false;
+    return s.connectionType === "wifi";
+  } catch {
+    const c = (navigator as unknown as { connection?: { type?: string; effectiveType?: string } }).connection;
+    if (!c) return true;
+    if (c.type) return c.type === "wifi" || c.type === "ethernet";
+    return c.effectiveType === "4g" || c.effectiveType === "wifi";
+  }
 }
+
 
 async function uploadOne(asset: MediaAsset, botToken: string, chatId: string, freeBlob: boolean) {
   let blob = asset.blob;
@@ -96,7 +106,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   const settings = await getSyncSettings();
   if (settings.paused) return { processed: 0, failed: 0 };
   if (!isOnline()) return { processed: 0, failed: 0 };
-  if (settings.wifiOnly && !isWifiLike()) return { processed: 0, failed: 0 };
+  if (settings.wifiOnly && !(await isWifiLike())) return { processed: 0, failed: 0 };
 
   const cfg = await photoDb.providers.get("telegram");
   if (!cfg?.configured || !cfg.botToken || !cfg.chatId) return { processed: 0, failed: 0 };
