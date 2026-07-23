@@ -83,6 +83,13 @@ export function logDiag(
   detail?: unknown,
   category: DiagCategory = "app",
 ) {
+  // Only persist warnings and errors — keep info visible in the devtools
+  // console but out of the ring buffer so the panel and phone stay responsive.
+  if (level === "info") {
+    // eslint-disable-next-line no-console
+    console.log(`[${category}·${scope}]`, message, detail ?? "");
+    return;
+  }
   const entry: DiagEntry = {
     ts: Date.now(),
     level,
@@ -96,7 +103,7 @@ export function logDiag(
   buffer.push(entry);
   if (buffer.length > BUFFER_MAX) buffer.splice(0, buffer.length - BUFFER_MAX);
   // eslint-disable-next-line no-console
-  console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
+  console[level === "error" ? "error" : "warn"](
     `[${category}·${scope}]`, message, detail ?? "",
   );
   emit();
