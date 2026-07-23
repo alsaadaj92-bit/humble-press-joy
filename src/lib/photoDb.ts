@@ -96,7 +96,7 @@ class PhotoDatabase extends Dexie {
       persons: null,
       ocr: null,
       providers: "kind, configured",
-      assets: "id, provider, date, syncedAt, remoteFileId, [provider+syncedAt]",
+      assets: "id, provider, date, syncedAt, remoteFileId",
       kv: "key",
     });
   }
