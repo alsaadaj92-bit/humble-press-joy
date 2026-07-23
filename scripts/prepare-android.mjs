@@ -102,6 +102,17 @@ if (!xml.includes("android.support.FILE_PROVIDER_PATHS")) {
   added++;
 }
 
+const serviceBlock = `
+        <service
+            android:name=".SyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />`;
+
+if (!xml.includes(".SyncForegroundService")) {
+  xml = xml.replace(/\s*<\/application>/, `${serviceBlock}\n    </application>`);
+  added++;
+}
+
 writeFileSync(manifestPath, xml);
 
 const filePathsPath = resolve("android/app/src/main/res/xml/file_paths.xml");
