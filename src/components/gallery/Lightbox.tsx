@@ -5,6 +5,7 @@ import type { MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
 import { ZoomableImage } from "./ZoomableImage";
 import { runViewTransition } from "@/lib/viewTransition";
+import { pushBackHandler } from "@/lib/backStack";
 import { isNative, saveBlobToDevice } from "@/lib/native";
 
 interface LightboxProps {
@@ -48,6 +49,9 @@ export function Lightbox({ photos, index, onClose, onIndexChange, showDownload }
   }, [index, goto, close]);
 
   useEffect(() => { setDx(0); }, [index]);
+
+  // Android hardware back closes the lightbox instead of exiting the tab.
+  useEffect(() => pushBackHandler(() => { close(); return true; }), [close]);
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (zoomed || e.touches.length !== 1) return;
