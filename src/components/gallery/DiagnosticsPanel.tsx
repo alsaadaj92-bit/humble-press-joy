@@ -1,46 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Trash2, Bug, AlertTriangle, Info, Download, Share2 } from "lucide-react";
+import { Copy, Trash2, Bug, AlertTriangle, Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   buildDiagnosticsReport,
   clearDiagnostics,
   subscribeDiagnostics,
   type DiagEntry,
-  type DiagCategory,
+  type DiagLevel,
 } from "@/lib/diagnostics";
 import { cn } from "@/lib/utils";
 import { confirmDialog } from "@/lib/confirmDialog";
 import { nativeShareText, saveBlobToDevice, isNative } from "@/lib/native";
 
 /**
- * In-app runtime telemetry viewer.
- *
- * Records: environment, timeline, touches, permissions, AI ops, IndexedDB,
- * performance, native events, network calls, and errors. Users copy/share/
- * download a full report to hand off for offline analysis.
+ * Warnings + errors only. Info logs stream to devtools console but are not
+ * stored so the phone stays responsive.
  */
-const CATEGORIES: { key: DiagCategory | "all"; label: string }[] = [
+const LEVELS: { key: DiagLevel | "all"; label: string }[] = [
   { key: "all", label: "الكل" },
-  { key: "timeline", label: "الجدول" },
-  { key: "touch", label: "لمسات" },
-  { key: "perm", label: "أذونات" },
-  { key: "ai", label: "AI" },
-  { key: "idb", label: "IDB" },
-  { key: "perf", label: "أداء" },
-  { key: "native", label: "نيتف" },
-  { key: "net", label: "شبكة" },
   { key: "error", label: "أخطاء" },
+  { key: "warn", label: "تحذيرات" },
 ];
 
 export function DiagnosticsPanel() {
   const [entries, setEntries] = useState<DiagEntry[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [filter, setFilter] = useState<DiagCategory | "all">("all");
+  const [filter, setFilter] = useState<DiagLevel | "all">("all");
 
   useEffect(() => subscribeDiagnostics(setEntries), []);
 
   const filtered = useMemo(
-    () => (filter === "all" ? entries : entries.filter((e) => (e.category ?? "app") === filter)),
+    () => (filter === "all" ? entries : entries.filter((e) => e.level === filter)),
     [entries, filter],
   );
 
@@ -48,13 +38,13 @@ export function DiagnosticsPanel() {
     const report = buildDiagnosticsReport();
     try {
       await navigator.clipboard.writeText(report);
-      toast.success("تم نسخ التقرير الكامل");
+      toast.success("تم نسخ التقرير");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = report;
       document.body.appendChild(ta);
       ta.select();
-      try { document.execCommand("copy"); toast.success("تم نسخ التقرير"); }
+      try { document.execCommand("copy"); toast.success("تم النسخ"); }
       catch { toast.error("تعذّر النسخ"); }
       finally { document.body.removeChild(ta); }
     }
@@ -66,14 +56,14 @@ export function DiagnosticsPanel() {
     const name = `telemetry-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
     if (isNative()) {
       const uri = await saveBlobToDevice(name, blob);
-      if (uri) { toast.success(`حُفظ في المستندات: ${name}`); return; }
+      if (uri) { toast.success(`حُفظ: ${name}`); return; }
     }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
-    toast.success("تم تنزيل التقرير");
+    toast.success("تم التنزيل");
   };
 
   const shareReport = async () => {
@@ -97,51 +87,51 @@ export function DiagnosticsPanel() {
 
   return (
     <div className="rounded-2xl border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 p-3">
-        <Bug className="h-4 w-4 text-primary" />
+      <div className="flex items-center gap-2 border-b border-border/60 p-3">
+        <Bug className="h-4 w-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">تشخيصات وتيليمتري مباشرة</p>
+          <p className="text-sm font-medium">التشخيصات</p>
           <p className="text-[11px] text-muted-foreground">
-            {entries.length} حدث · {errors} خطأ · {warns} تحذير
+            {errors} خطأ · {warns} تحذير
           </p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1.5 border-b border-border/60 p-2">
         <button
           onClick={copyReport}
-          className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+          className="flex items-center justify-center gap-1 rounded-full bg-primary px-2 py-2 text-xs font-semibold text-primary-foreground"
         >
           <Copy className="h-3.5 w-3.5" /> نسخ
         </button>
         <button
           onClick={downloadReport}
-          className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold"
-          title="تنزيل ملف .log"
+          className="flex items-center justify-center gap-1 rounded-full bg-secondary px-2 py-2 text-xs font-semibold"
         >
           <Download className="h-3.5 w-3.5" /> تنزيل
         </button>
         <button
           onClick={shareReport}
-          className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold"
-          title="مشاركة"
+          className="flex items-center justify-center gap-1 rounded-full bg-secondary px-2 py-2 text-xs font-semibold"
         >
           <Share2 className="h-3.5 w-3.5" /> مشاركة
         </button>
         <button
           onClick={clear}
-          className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-destructive"
-          title="مسح"
+          className="flex items-center justify-center gap-1 rounded-full bg-secondary px-2 py-2 text-xs font-semibold text-destructive"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" /> مسح
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-b border-border/60 p-2">
-        {CATEGORIES.map((c) => (
+      <div className="flex gap-1.5 border-b border-border/60 p-2">
+        {LEVELS.map((c) => (
           <button
             key={c.key}
             onClick={() => setFilter(c.key)}
             className={cn(
-              "rounded-full px-2.5 py-1 text-[11px] font-medium transition",
-              filter === c.key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground",
+              "flex-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition",
+              filter === c.key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground",
             )}
           >
             {c.label}
@@ -149,26 +139,23 @@ export function DiagnosticsPanel() {
         ))}
       </div>
 
-      <div className="max-h-96 overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto">
         {filtered.length === 0 ? (
-          <p className="p-4 text-center text-xs text-muted-foreground">لا توجد سجلات لهذه الفئة.</p>
+          <p className="p-6 text-center text-xs text-muted-foreground">
+            لا يوجد أي خطأ أو تحذير 🎉
+          </p>
         ) : (
           <ul className="divide-y divide-border/60 text-xs">
-            {[...filtered].reverse().slice(0, 200).map((e, idx) => {
+            {[...filtered].reverse().map((e, idx) => {
               const isOpen = expanded === idx;
-              const Icon = e.level === "error" ? AlertTriangle : e.level === "warn" ? AlertTriangle : Info;
-              const color = e.level === "error"
-                ? "text-destructive"
-                : e.level === "warn"
-                ? "text-amber-500"
-                : "text-muted-foreground";
+              const color = e.level === "error" ? "text-destructive" : "text-amber-500";
               return (
                 <li key={idx} className="p-2.5">
                   <button
                     onClick={() => setExpanded(isOpen ? null : idx)}
                     className="flex w-full items-start gap-2 text-start"
                   >
-                    <Icon className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", color)} />
+                    <AlertTriangle className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", color)} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate">
                         <span className="font-mono text-[10px] text-muted-foreground">

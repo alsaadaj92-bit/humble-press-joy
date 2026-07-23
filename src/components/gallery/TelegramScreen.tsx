@@ -25,14 +25,22 @@ export function TelegramScreen() {
   const [busy, setBusy] = useState(false);
 
   const photos = useMemo<MockPhoto[]>(() => assets.map((a) => {
-    const url = urls.get(a.id);
+    const full = urls.full.get(a.id);
+    const thumb = urls.thumb.get(a.id);
+    const isHeic = /image\/(heic|heif)/i.test(a.mime);
+    const isVideo = a.kind === "video";
+    // HEIC can't render in <img>. Videos have no image bytes.
+    // Use the JPEG thumbnail Telegram already sends for both.
+    const displayThumb = (isHeic || isVideo) ? (thumb ?? a.posterDataUrl) : (thumb ?? full);
+    const displayFull = isHeic ? (thumb ?? full) : full;
     return {
       id: a.id, seed: a.id,
       width: a.width ?? 400, height: a.height ?? 400,
       date: new Date(a.date), name: a.name,
-      thumbSrc: (a.kind === "video" ? a.posterDataUrl : url) ?? url,
-      fullSrc: url,
-      kind: a.kind === "video" ? "video" : "image",
+      thumbSrc: displayThumb ?? full,
+      fullSrc: isVideo ? full : displayFull,
+      posterSrc: thumb,
+      kind: isVideo ? "video" : "image",
       duration: a.duration, mime: a.mime, provider: a.provider,
     };
   }), [assets, urls]);

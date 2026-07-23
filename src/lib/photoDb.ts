@@ -34,6 +34,9 @@ export interface MediaAsset {
   remoteFileId?: string;
   remoteMessageId?: number;
   remoteFilePath?: string;
+  /** Small JPEG thumbnail Telegram serves for HEIC/RAW documents and videos. */
+  thumbFileId?: string;
+  thumbFilePath?: string;
   /** Set when the local device asset has been successfully uploaded to Telegram. */
   syncedAt?: number;
 }
@@ -55,11 +58,11 @@ export interface SyncSettings {
 }
 
 export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
-  mode: "auto",
-  wifiOnly: false,
+  mode: "manual",
+  wifiOnly: true,
   // 0 = unlimited. Telegram itself may still reject files above its Bot API limit.
   maxFileMb: 0,
-  paused: false,
+  paused: true,
   freeBlobAfterSync: true,
 };
 
