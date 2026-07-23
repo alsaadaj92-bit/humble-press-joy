@@ -143,7 +143,7 @@ export function useTelegramFeed(enabled: boolean, intervalMs = 15000) {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setLastError(msg);
-        logNative("telegram-feed", msg, undefined, "warn");
+        logNative("telegram-feed", msg, "warn");
       } finally {
         running.current = false;
       }
