@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MobileNav, type Tab } from "@/components/gallery/MobileNav";
 import { SyncScreen } from "@/components/gallery/SyncScreen";
 import { TelegramScreen } from "@/components/gallery/TelegramScreen";
@@ -8,23 +8,47 @@ import { useSyncLoop } from "@/hooks/useSyncEngine";
 import { useNativeInit } from "@/hooks/useNativeInit";
 import { useBackButton } from "@/hooks/useBackButton";
 
+const TAB_KEY = "ui:activeTab";
+
+function loadTab(): Tab {
+  try {
+    const v = localStorage.getItem(TAB_KEY);
+    if (v === "sync" || v === "telegram" || v === "settings") return v;
+  } catch { /* noop */ }
+  return "sync";
+}
+
 const Index = () => {
-  const [tab, setTab] = useState<Tab>("sync");
+  const [tab, setTabState] = useState<Tab>(loadTab);
   useSyncLoop();
   useNativeInit();
+
+  const setTab = useCallback((next: Tab) => {
+    setTabState(next);
+    try { localStorage.setItem(TAB_KEY, next); } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(TAB_KEY, tab); } catch { /* noop */ }
+  }, [tab]);
 
   const back = useCallback(() => {
     if (tab === "settings") { setTab("sync"); return true; }
     if (tab === "telegram") { setTab("sync"); return true; }
     return false;
-  }, [tab]);
+  }, [tab, setTab]);
   useBackButton(back);
 
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <main className="min-h-screen">
-        {tab === "sync" && <SyncScreen />}
-        {tab === "telegram" && <TelegramScreen />}
+        {/* Keep every tab mounted so scroll, feed state, and pending work survive tab switches. */}
+        <div style={{ display: tab === "sync" ? "block" : "none" }}>
+          <SyncScreen />
+        </div>
+        <div style={{ display: tab === "telegram" ? "block" : "none" }}>
+          <TelegramScreen />
+        </div>
         {tab === "settings" && <SettingsPage onBack={() => setTab("sync")} />}
       </main>
       {tab !== "settings" && <MobileNav active={tab} onChange={setTab} />}
