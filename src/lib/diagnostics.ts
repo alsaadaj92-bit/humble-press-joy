@@ -32,7 +32,7 @@ export interface DiagEntry {
   category?: DiagCategory;
 }
 
-const BUFFER_MAX = 5000;
+const BUFFER_MAX = 500;
 const KV_KEY = "diagnostics:log";
 const KV_ENV_KEY = "diagnostics:env";
 const buffer: DiagEntry[] = [];
