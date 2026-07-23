@@ -484,7 +484,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.IBinder;
 
@@ -493,6 +496,13 @@ import androidx.core.app.NotificationCompat;
 public class SyncForegroundService extends Service {
     private static final String CHANNEL_ID = "sync_channel";
     private static final int NOTIF_ID = 4711;
+    public static final String ACTION_PAUSE = "app.lovable.sync.PAUSE";
+    public static final String ACTION_RESUME = "app.lovable.sync.RESUME";
+    public static final String ACTION_STOP = "app.lovable.sync.STOP";
+    public static final String BROADCAST_COMMAND = "app.lovable.sync.COMMAND";
+
+    private boolean paused = false;
+    private BroadcastReceiver receiver;
 
     @Override
     public void onCreate() {
@@ -504,6 +514,33 @@ public class SyncForegroundService extends Service {
             NotificationManager mgr = getSystemService(NotificationManager.class);
             if (mgr != null) mgr.createNotificationChannel(ch);
         }
+        receiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) {
+                String a = i.getAction();
+                if (a == null) return;
+                Intent out = new Intent(BROADCAST_COMMAND);
+                if (ACTION_PAUSE.equals(a)) { paused = true; out.putExtra("action", "pause"); }
+                else if (ACTION_RESUME.equals(a)) { paused = false; out.putExtra("action", "resume"); }
+                else if (ACTION_STOP.equals(a)) { out.putExtra("action", "stop"); sendBroadcast(out); stopSelf(); return; }
+                else return;
+                sendBroadcast(out);
+            }
+        };
+        IntentFilter f = new IntentFilter();
+        f.addAction(ACTION_PAUSE);
+        f.addAction(ACTION_RESUME);
+        f.addAction(ACTION_STOP);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(receiver, f, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(receiver, f);
+        }
+    }
+
+    private PendingIntent actionIntent(String action) {
+        Intent i = new Intent(action).setPackage(getPackageName());
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        return PendingIntent.getBroadcast(this, action.hashCode(), i, flags);
     }
 
     @Override
@@ -524,13 +561,20 @@ public class SyncForegroundService extends Service {
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title != null ? title : "جاري المزامنة")
-            .setContentText(text != null ? text : "")
+            .setContentText(paused ? "موقوفة مؤقتاً" : (text != null ? text : ""))
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW);
         if (pi != null) b.setContentIntent(pi);
-        if (max > 0) b.setProgress(max, progress, false);
+        if (max > 0) b.setProgress(max, progress, paused);
+
+        if (paused) {
+            b.addAction(0, "استئناف", actionIntent(ACTION_RESUME));
+        } else {
+            b.addAction(0, "إيقاف مؤقت", actionIntent(ACTION_PAUSE));
+        }
+        b.addAction(0, "إيقاف", actionIntent(ACTION_STOP));
 
         Notification n = b.build();
         if (Build.VERSION.SDK_INT >= 29) {
@@ -542,9 +586,16 @@ public class SyncForegroundService extends Service {
     }
 
     @Override
+    public void onDestroy() {
+        try { if (receiver != null) unregisterReceiver(receiver); } catch (Exception ignored) {}
+        super.onDestroy();
+    }
+
+    @Override
     public IBinder onBind(Intent intent) { return null; }
 }
 `);
+
 
 writeIfChanged(mainActivityPath, `package ${APP_ID};
 
