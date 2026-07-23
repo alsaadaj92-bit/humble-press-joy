@@ -63,12 +63,20 @@ function emit(patch: Partial<SyncProgress>) {
 function isOnline() {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
-function isWifiLike() {
-  const c = (navigator as unknown as { connection?: { type?: string; effectiveType?: string } }).connection;
-  if (!c) return true;
-  if (c.type) return c.type === "wifi" || c.type === "ethernet";
-  return c.effectiveType === "4g" || c.effectiveType === "wifi";
+async function isWifiLike(): Promise<boolean> {
+  // Prefer Capacitor Network on device — navigator.connection lies inside WebView.
+  try {
+    const s = await Network.getStatus();
+    if (!s.connected) return false;
+    return s.connectionType === "wifi";
+  } catch {
+    const c = (navigator as unknown as { connection?: { type?: string; effectiveType?: string } }).connection;
+    if (!c) return true;
+    if (c.type) return c.type === "wifi" || c.type === "ethernet";
+    return c.effectiveType === "4g" || c.effectiveType === "wifi";
+  }
 }
+
 
 async function uploadOne(asset: MediaAsset, botToken: string, chatId: string, freeBlob: boolean) {
   let blob = asset.blob;
