@@ -106,7 +106,7 @@ export async function runSyncCycle(): Promise<{ processed: number; failed: numbe
   const settings = await getSyncSettings();
   if (settings.paused) return { processed: 0, failed: 0 };
   if (!isOnline()) return { processed: 0, failed: 0 };
-  if (settings.wifiOnly && !isWifiLike()) return { processed: 0, failed: 0 };
+  if (settings.wifiOnly && !(await isWifiLike())) return { processed: 0, failed: 0 };
 
   const cfg = await photoDb.providers.get("telegram");
   if (!cfg?.configured || !cfg.botToken || !cfg.chatId) return { processed: 0, failed: 0 };
