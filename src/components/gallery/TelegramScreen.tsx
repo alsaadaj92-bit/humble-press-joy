@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { useMediaAssets } from "@/hooks/useMediaAssets";
 import { useProviders } from "@/hooks/useProviders";
 import { useTelegramFeed, useRemoteAssetUrls } from "@/hooks/useTelegramFeed";
+import { photoDb } from "@/lib/photoDb";
 import { PhotoGrid } from "./PhotoGrid";
 import { Lightbox } from "./Lightbox";
 import { EmptyState } from "./EmptyState";
@@ -14,12 +16,13 @@ export function TelegramScreen() {
   const { providers } = useProviders();
   const tg = providers.get("telegram");
   const ready = !!tg?.configured && !!tg.botToken;
-  const { lastError, lastPolledAt } = useTelegramFeed(ready);
+  const [pollTick, setPollTick] = useState(0);
+  const { lastError, lastPolledAt } = useTelegramFeed(ready, 15000, pollTick);
   const assets = useMediaAssets({ kind: "telegram-remote" });
   const urls = useRemoteAssetUrls(assets);
   const { density } = useGridDensity();
   const [lightbox, setLightbox] = useState<number | null>(null);
-  const [polling, setPolling] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const photos = useMemo<MockPhoto[]>(() => assets.map((a) => {
     const url = urls.get(a.id);
@@ -35,10 +38,22 @@ export function TelegramScreen() {
   }), [assets, urls]);
 
   useEffect(() => {
-    if (!polling) return;
-    const t = setTimeout(() => setPolling(false), 2000);
+    if (!busy) return;
+    const t = setTimeout(() => setBusy(false), 2500);
     return () => clearTimeout(t);
-  }, [polling]);
+  }, [busy]);
+
+  const refresh = () => { setBusy(true); setPollTick((t) => t + 1); };
+
+  const resync = async () => {
+    setBusy(true);
+    // Reset the stored update offset so the next poll asks Telegram for the
+    // full window it still remembers (~24h). Historical messages from before
+    // the bot was added are NOT retrievable — that's a Telegram Bot API limit.
+    await photoDb.kv.delete("tg:updates:offset");
+    setPollTick((t) => t + 1);
+    toast.info("سيقوم البوت بجلب كل ما يتذكره تليكرام (آخر 24 ساعة).");
+  };
 
   return (
     <div className="min-h-full pb-24">
@@ -46,16 +61,28 @@ export function TelegramScreen() {
         <div className="min-w-0">
           <h1 className="text-lg font-bold leading-tight">معرض تليكرام</h1>
           <p className="truncate text-[11px] text-muted-foreground">
-            {assets.length} عنصر · {lastPolledAt ? "آخر تحديث الآن" : "بانتظار الرسائل الجديدة"}
+            {assets.length} عنصر · {lastPolledAt ? "آخر تحديث الآن" : "بانتظار الرسائل"}
           </p>
         </div>
-        <button
-          onClick={() => setPolling(true)}
-          className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-semibold"
-        >
-          {polling ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          تحديث
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={resync}
+            disabled={!ready || busy}
+            className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-2 text-xs font-semibold disabled:opacity-50"
+            title="إعادة الجلب من البداية"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            إعادة الفهرسة
+          </button>
+          <button
+            onClick={refresh}
+            disabled={!ready || busy}
+            className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            تحديث
+          </button>
+        </div>
       </header>
 
       {!ready && (
@@ -69,8 +96,21 @@ export function TelegramScreen() {
         </div>
       )}
       {ready && assets.length === 0 && (
-        <div className="mx-4 mt-4 rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
-          تليكرام لا يرسل الرسائل القديمة عبر getUpdates. سترى هنا كل صورة/فيديو جديد يصل للبوت من الآن.
+        <div className="mx-4 mt-4 rounded-xl border border-border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
+          <p className="mb-2 font-semibold text-foreground">لماذا لا أرى صوري القديمة؟</p>
+          <p className="mb-2">
+            هذا قيد من تليكرام نفسه: البوت لا يستطيع قراءة الرسائل التي أُرسلت قبل إضافته،
+            ولا يوجد أي API يمكّن البوت من تصفح محفوظات المجموعة/القناة.
+          </p>
+          <p className="mb-2 font-semibold text-foreground">الحل الوحيد لاستيراد القديم:</p>
+          <ol className="list-decimal space-y-1 pr-4">
+            <li>افتح المجموعة/القناة في تليكرام.</li>
+            <li>اضغط على كل صورة/فيديو قديم → مشاركة → أرسل للبوت مباشرة.</li>
+            <li>ستظهر الصورة هنا خلال ثوانٍ.</li>
+          </ol>
+          <p className="mt-3">
+            كل الصور الجديدة التي ترفعها من هذا التطبيق أو ترسلها للبوت ستظهر تلقائياً.
+          </p>
         </div>
       )}
 
@@ -80,14 +120,7 @@ export function TelegramScreen() {
           onOpen={(i) => runViewTransition(() => setLightbox(i))}
           density={density}
           activeId={lightbox != null ? photos[lightbox]?.id : null}
-          emptyContent={
-            ready ? (
-              <EmptyState
-                title="لا صور بعد"
-                body="أرسل صورة أو فيديو من مجموعتك للبوت — ستظهر هنا خلال ثوانٍ."
-              />
-            ) : null
-          }
+          emptyContent={null}
         />
       </div>
 
