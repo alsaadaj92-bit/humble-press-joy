@@ -1,67 +1,148 @@
-# خطة إصلاح جذرية — LocalGallery Pro
 
-بعد قراءة الكود بعناية، هذه هي الأعطال الحقيقية والحلول.
+# خطة إعادة الهيكلة: تطبيق مزامنة صور تليكرام فقط
 
-## 1) لماذا لا يظهر معرض الهاتف تلقائيًا؟
+## الفكرة النهائية
+تطبيق واحد بثلاث شاشات:
+1. **للمزامنة** — الصور المستوردة من الاستوديو التي لم تُرفع بعد للتليكرام.
+2. **معرض تليكرام** — يقرأ الصور مباشرة من مجموعتك عبر Telegram Bot API ويعرضها كمعرض حقيقي.
+3. **الإعدادات** — بوت التليكرام + الشات + وضع المزامنة.
 
-**السبب الجذري:** الدالة `scanDeviceGallery()` تعتمد على بلجن Capacitor مخصّص اسمه `LocalGalleryMedia` (في `src/lib/deviceMedia.ts` سطر 55، `src/lib/native.ts` سطر 23). هذا البلجن **غير موجود** في المشروع — لا يوجد له كود Java/Kotlin. لذلك:
+كل شيء آخر يُحذف من الواجهة والكود.
 
-- على Android → `registerPlugin("LocalGallery Media")` يُرجع كائنًا وهميًا، ونداء `requestGalleryPermissions()` يفشل بصمت.
-- الاحتياط ينتقل إلى `Camera.requestPermissions({ photos })`، لكن هذا صلاحية **الكاميرا للصور**، وليست صلاحية `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` المطلوبة على Android 13+.
-- حتى لو مُنحت، ‏`scanAndroidGallery()` يستدعي `LocalGalleryMedia.getDeviceMedia()` غير الموجود → يرمي فورًا، ولا تُدرج أي صور.
+---
 
-**النتيجة:** لا تظهر أي صورة من المعرض، ولا يظهر أي طلب صلاحية حقيقي.
+## 1. الحذف الكامل
 
-**الحل:**
-- إزالة الاعتماد على البلجن الوهمي.
-- استخدام بلجن جاهز موثّق: `@capacitor/media` غير موجود، لكن `@capawesome/capacitor-file-picker` + `@capacitor-community/media` يعملان على iOS فقط. الأنسب لأندرويد: **`@capgo/capacitor-native-photo-gallery`** أو **`@capawesome/capacitor-android-content`**.
-- الحل العملي المضمون: استخدام **Storage Access Framework** عبر بلجن `capacitor-plugin-safe-area` + `@capacitor/filesystem` — نطلب من المستخدم مرة واحدة اختيار مجلد `DCIM/Camera` و`Pictures`، ثم نمسحها دوريًا بـ `Filesystem.readdir()` (يعمل داخل Capacitor بدون بلجن مخصّص).
-- إضافة أذونات `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED` في `AndroidManifest.xml` عبر `scripts/prepare-android.mjs`.
-- استيراد كل الصور فورًا كـ `MediaAsset` مع `posterDataUrl` من مصغّرات مولّدة بـ `<canvas>`.
+### مكوّنات تُحذف من المشروع
+- OCR: `OcrPanel`, `lib/ocr.ts`, `ocr.test.ts`, تبعية `tesseract.js`.
+- بحث دلالي CLIP: `SmartSearchPanel`, `lib/semantic.ts` + test, `lib/preloadModels.ts`, تبعية `@xenova/transformers`.
+- الوجوه: `PeoplePanel`, `FaceSettingsPanel`, `lib/faces.ts`, `lib/faceCluster.ts` + tests, تبعية `@mediapipe/tasks-vision`.
+- الذكريات: `MemoriesPanel`, `lib/memories.ts` + `highlights.ts`.
+- الأماكن: `PlacesPanel`, `lib/places.ts` + test, `MiniMap.tsx`.
+- المكررات: `DuplicatesPanel`, `lib/duplicates.ts` + test.
+- الألبومات: `AlbumsPanel`, `LiveAlbumsPanel`, `AlbumPickerDialog`, `CategoriesPanel`, `CreationsPanel`, `lib/albums.ts`, `manualAlbums.ts`, `liveAlbums.ts`, `categories.ts`, `creations.ts`, `shareCollections.ts`, `share.ts`.
+- التشفير + المجلد المقفل: `EncryptionPanel`, `LockedFolderPanel`, `lib/crypto.ts`, `lib/lockedFolder.ts`.
+- محرر/إيريزر: `PhotoEditor`, `MagicEraserPanel`, `DocumentScannerPanel`, `lib/imageEditor.ts`, `magicEraser.ts`, `documentScanner.ts`.
+- Auto-pipeline: `AutoPipelineBadge`, `AutoPipelineConsent`, `useAutoPipeline`, `lib/autoPipeline.ts`, `useAutoBackup`, `autoBackup.ts`, `backup.ts`, `BackupPanel`.
+- خدمات مساعدة لم تعد تُستخدم: `serverCode.ts`, `providers/localServer*.ts`, `useResolvedAssets` (يبقى إن لزم للعرض)، `chunker.ts`، `compress.ts` (يبقى إن استخدمنا الضغط عند الرفع)، `useTrashSweeper`، `TrashBanner`، `TimelineScrubber`، `QuickChips`، `LibraryHub`، `AdvancedToolsHub`، `SharingPanel`، `TopicRulesPanel` + `useTopicRules` + `topicRouting.ts`.
+- MCP tools ما عدا `send-telegram-photo`.
 
-## 2) لماذا الأذونات لا تُطلب؟
+### Dexie schema (bump v6)
+تُحذف الجداول: `photoStates` (نُبقيها فقط لعلامة "isFavorite" اختيارياً — أو نحذفها كلها)، `topicRules`, `albums`, `albumMembers`.  
+تبقى: `providers`, `assets`, `syncJobs`, `kv`.  
+نضيف على `assets`: حقل `syncedAt?: number` + فهرس `[provider+syncedAt]`.
 
-- `PermissionsWizard` يعمل فقط في أول تشغيل ثم يخزّن `wizardDone=1` في Preferences، ثم لا يظهر أبدًا.
-- `useNativeInit` يستدعي `checkCameraPermission()` فقط، ولا يفتح أي حوار للمعرض إذا رفض المستخدم.
+### فلترة "للمزامنة"
+الشاشة الرئيسية تعرض فقط: `assets` حيث `provider === 'device'` و `syncedAt` غير مُعرّف.  
+بعد رفع ناجح لكل asset يضع `syncEngine` `syncedAt = Date.now()` و `remoteFileId` — يختفي من القائمة تلقائياً.
 
-**الحل:** فتح `PermissionsWizard` تلقائيًا عند كل بدء طالما أن أي إذن حرج (`gallery`, `notifications`) ليس `granted`، مع زر واضح داخل الإعدادات لإعادة الطلب.
+---
 
-## 3) لماذا التطبيق لا يزامن تلقائيًا؟
+## 2. الاستيراد (يبقى)
+- يستخدم `Camera.pickImages({ limit: 0 })` (يعمل حالياً).
+- زر واحد "استيراد صور" في أعلى شاشة "للمزامنة".
+- في المتصفح: `<input type="file" webkitdirectory multiple>` لدعم اختيار مجلد كامل.
+- Capacitor يترجم `Camera.pickImages` إلى Android `ACTION_PICK` مع `EXTRA_ALLOW_MULTIPLE` وأذونات `READ_MEDIA_IMAGES` — مُهيّأ فعلاً في `AndroidManifest` عبر البلجن.
 
-- `useSyncLoop` صحيح، لكن الإعداد الافتراضي `mode: "manual"`. المستخدم لا يعلم بوجود إعداد.
-- **الحل:** تغيير الافتراضي إلى `auto-on-import`، وإظهار شارة "المزامنة نشطة" في `TopBar`.
+---
 
-## 4) لماذا الذكريات فارغة؟
+## 3. المزامنة للتليكرام
+- `syncEngine` يبقى لكن مبسّطاً: يقرأ `assets` غير المتزامنة، يرفعها عبر `telegramSendDocument`، يحدّث `syncedAt` و `remoteFileId` و `remoteMessageId`.
+- إعدادات مبسّطة: تلقائي/يدوي فقط + Wi-Fi only toggle.
+- زر "مزامنة الآن" بارز + شريط تقدم حي في الأعلى.
 
-- `memories.ts` يبحث في `photoDb.assets` فقط عن صور بنفس اليوم من سنوات سابقة. لأن المعرض فارغ (المشكلة 1)، لا توجد ذكريات.
-- **الحل:** إصلاح المشكلة 1 يحلّها. إضافة "ذكريات هذا الأسبوع" و"أفضل لقطات الشهر" كبديل عندما لا توجد صور من سنوات سابقة.
+---
 
-## 5) العرض بدائي مقارنة بـ Google Photos
+## 4. عارض التليكرام (جديد)
+شاشة `TelegramGallery`:
+- عند الفتح تستدعي `getUpdates` بشكل متكرر (long-poll offset مخزّن في `kv`) لبناء فهرس محلي في `assets` بعلامة `provider: 'telegram-remote'` مع `fileId`, `date`, `width/height` من الرد.
+- كل رسالة تحوي photo أو document (image/video) تُضاف. التكرار يُتجاهل عبر `fileId`.
+- الشبكة (masonry) نفس `PhotoGrid` (نُعيد استخدامه).
+- عند فتح صورة: `getFile` → `telegramFileUrl` → عرضها كاملة الحجم في Lightbox.
+- زر تنزيل: يجلب البلوب ويستخدم Capacitor Filesystem (على Android) أو `<a download>` على الويب.
 
-- الشبكة الحالية `columns-2 md:columns-3` بدون تجميع زمني حقيقي، بدون رؤوس أقسام لاصقة، بدون تكبير بإيماءة على الشبكة.
-- **الحل:** إعادة بناء `PhotoGrid` باستخدام `react-virtuoso` للأداء + رؤوس شهر لاصقة + تكبير ديناميكي (2/3/4/5 أعمدة) + شريط تمرير زمني على اليمين.
+Long-poll يمشي في الخلفية داخل hook `useTelegramFeed` مع debounce لتجنّب إفراط الطلبات.
 
-## 6) OCR لا ينجح — استبداله
+---
 
-- Tesseract.wasm ثقيل (~15MB) وبطيء على الهاتف ونتائجه رديئة للعربية.
-- **الحل:** استبداله بـ **Google ML Kit Text Recognition** عبر بلجن `@capacitor-mlkit/text-recognition` — أسرع 20×، يعمل offline، يدعم العربية أصليًا.
+## 5. الانتقالات (shared-element + swipe + pinch-zoom)
+- الشبكة تُضيف `style={{ viewTransitionName: 'photo-'+id }}` على البلاطة النشطة.
+- الـ Lightbox يضع نفس الاسم على `<img>` الرئيسية.
+- الفتح/الإغلاق داخل `runViewTransition()` (موجود).
+- Lightbox جديد مبني على swipeable horizontal snap (`overflow-x snap-x`) + `ZoomableImage` (موجود) للـ pinch/pan.
+- على Android يعمل View Transitions API عبر WebView Chromium الحديث؛ fallback: `animate-fade-in`.
 
-## خطة التنفيذ (بالترتيب)
+---
 
-1. **إصلاح استيراد المعرض** — إضافة الأذونات في Manifest، استبدال البلجن الوهمي بمسح `Filesystem` مباشر لـ `DCIM/Camera` و`Pictures/*`، توليد مصغّرات محليًا.
-2. **إظهار Wizard الأذونات دائمًا** حتى تُمنح أذونات المعرض والإشعارات.
-3. **تفعيل المزامنة التلقائية افتراضيًا** (`auto-on-import`) + مؤشر حالة في TopBar.
-4. **إعادة بناء PhotoGrid** بـ `react-virtuoso` + رؤوس شهر + شريط تمرير زمني.
-5. **استبدال OCR** بـ ML Kit (`@capacitor-mlkit/text-recognition`) مع Fallback إلى Tesseract على الويب فقط.
-6. **إصلاح الذكريات** بإضافة قواعد "هذا الأسبوع" و"لقطات الشهر".
-7. **تشغيل AutoPipeline تلقائيًا** فور أول استيراد ناجح (بدون سؤال).
+## 6. التنقل النهائي
+`MobileNav` بتبويبتين فقط: **للمزامنة** و **معرض تليكرام**، + أيقونة إعدادات في أعلى الشاشة.  
+`Sidebar` يختفي (لا معنى له بتبويبتين).
 
-## تفاصيل تقنية
+---
 
-- `AndroidManifest.xml`: `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE_DATA_SYNC`.
-- `deviceMedia.ts`: يُعاد كتابته ليستخدم `Filesystem.readdir({ path: 'DCIM/Camera', directory: Directory.ExternalStorage })` ثم `Filesystem.stat` + `Filesystem.readFile` (base64) للصور، مع cache للمصغّرات في IndexedDB.
-- `ocr.ts`: واجهة موحّدة `ocrImage(url)` تختار ML Kit في native و Tesseract في web.
-- `PhotoGrid.tsx`: `<GroupedVirtuoso>` مع `groupCounts` مبني من `timeline.groupByMonth()`.
-- Default: `syncSettings.mode = "auto-on-import"` في `photoDb.ts` (`DEFAULT_SYNC_SETTINGS`).
+## 7. البنية النهائية للملفات
+```text
+src/
+  pages/Index.tsx                → Router بين tab=sync | tab=telegram | settings
+  components/gallery/
+    SyncScreen.tsx               → قائمة "للمزامنة" + زر استيراد + زر مزامنة
+    TelegramScreen.tsx           → عارض التليكرام
+    PhotoGrid.tsx                → مُبسّط (بلا favorite/select toolbar)
+    Lightbox.tsx                 → swipe + pinch + shared element
+    UploadFab.tsx                → مُبسّط لاستيراد فقط
+    SettingsPage.tsx             → بوت + شات + وضع المزامنة فقط
+    MobileNav.tsx                → تبويبتان
+    SyncCenter.tsx               → داخل SettingsPage كقسم
+    ProvidersPanel.tsx           → داخل SettingsPage كقسم
+    PermissionsWizard.tsx        → يبقى (Android)
+    DiagnosticsPanel.tsx         → يبقى مخفي في الإعدادات
+  hooks/
+    useMediaAssets.ts            → يقبل filter (unsynced | telegram)
+    useTelegramFeed.ts           → جديد
+    useSyncEngine.ts             → يبقى
+    useNativeInit.ts             → يبقى
+    useBackButton.ts             → يبقى
+    useGridDensity.ts            → يبقى
+  lib/
+    photoDb.ts                   → v6 schema مُصغّرة
+    deviceMedia.ts               → يبقى
+    providers/telegram.ts        → يبقى + دوال feed
+    syncEngine.ts                → مبسّط
+    exif.ts, video.ts, diagnostics.ts, native.ts, notifications.ts, ota.ts, viewTransition.ts, utils.ts, confirmDialog.tsx, timeline.ts, mockPhotos.ts
+```
+كل ما عدا ذلك يُحذف.
 
-بعد الموافقة سأنفّذ الخطوات بالترتيب مع اختبار كل خطوة قبل الانتقال للتالية.
+---
+
+## 8. تفاصيل تقنية
+
+**Telegram feed**
+- `getUpdates?offset=N&timeout=30&allowed_updates=["message","channel_post"]`
+- نخزّن `lastUpdateId` في `kv`.
+- الرسائل الأقدم من `getUpdates` (أكثر من 24 ساعة أو مُستهلكة) لا يعيدها تليكرام — لذا نبني الفهرس تدريجياً من لحظة أول تشغيل، ونشرح ذلك للمستخدم في banner أول مرة.
+- بديل مستقبلي: `forwardMessages`/قراءة الشات عبر MTProto — خارج نطاق هذه الجولة.
+
+**التنزيل**
+- على Android: `Filesystem.writeFile({ directory: Directory.Documents })` + `Media.savePhoto` إن توفّر — نبدأ بـ Filesystem فقط.
+
+**الأذونات**
+- `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `POST_NOTIFICATIONS`, `INTERNET`. لا حاجة لـ storage القديم.
+
+---
+
+## 9. خطوات التنفيذ بالترتيب
+1. حذف الملفات المذكورة + إزالة تبعياتها من `package.json`.
+2. تحديث `photoDb.ts` إلى v6 + migration بسيط (drop tables عبر Dexie version upgrade).
+3. تبسيط `syncEngine.ts` + تحديث الحقول.
+4. كتابة `useTelegramFeed.ts` + `TelegramScreen.tsx`.
+5. تبسيط `PhotoGrid` و `Lightbox` (swipe + pinch + shared-element).
+6. إعادة كتابة `pages/Index.tsx` و `MobileNav.tsx` بتبويبتين.
+7. تنظيف `SettingsPage` — فقط أقسام: البوت، وضع المزامنة، الأذونات، التشخيصات.
+8. فحص TypeScript + إصلاح كل import مكسور.
+9. تحديث `.lovable/plan.md` بنسخة مُقتضبة.
+
+---
+
+## 10. أسئلة صغيرة قد تظهر أثناء التنفيذ
+- هل نُبقي على الفيديو؟ الخطة: نعم، `sendDocument` يدعمه، والعارض يعرض `<video controls>`.
+- المفضلة على الشبكة؟ الخطة: تُحذف (كانت داخل photoStates المحذوف).
