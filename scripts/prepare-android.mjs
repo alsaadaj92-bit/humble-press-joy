@@ -55,7 +55,7 @@ if (!existsSync(manifestPath)) {
 const PERMS = [
   '<uses-permission android:name="android.permission.CAMERA"/>',
   '<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>',
-  '<uses-permission android:name="android.permission.READ_MEDIA_VIDEOS"/>',
+  '<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>',
   '<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>',
   '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>',
   '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>',
@@ -158,7 +158,7 @@ import java.util.Comparator;
 @CapacitorPlugin(
     name = "LocalGalleryMedia",
     permissions = {
-        @Permission(strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO }, alias = "media13"),
+        @Permission(strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED }, alias = "media13"),
         @Permission(strings = { Manifest.permission.READ_EXTERNAL_STORAGE }, alias = "mediaLegacy")
     }
 )

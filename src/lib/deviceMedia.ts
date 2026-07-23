@@ -1,12 +1,6 @@
-// Device gallery import — pivoted to use Capacitor's Camera.pickImages which
-// on Android correctly requests READ_MEDIA_IMAGES / READ_MEDIA_VISUAL_USER_SELECTED
-// and returns real file URIs we can convert to blobs. The previous approach
-// depended on a custom "LocalGalleryMedia" native plugin that was never
-// implemented, so scans silently failed.
-//
-// Users get the OS multi-select sheet ("Select all" works there) and every
-// picked photo/video is inserted into IndexedDB as a MediaAsset with its
-// original blob — meaning it shows up in the grid immediately, offline.
+// Device gallery import. Native Android builds use a real MediaStore bridge
+// that reads the whole gallery after permission; the OS picker remains only as
+// a browser/native fallback.
 import { Capacitor } from "@capacitor/core";
 import { Camera } from "@capacitor/camera";
 import { photoDb, type MediaAsset } from "./photoDb";
@@ -79,7 +73,7 @@ async function insertFileAsset(file: File, id: string, meta?: Partial<NativeGall
   return true;
 }
 
-async function importNativeGallery(onProgress?: (done: number, total: number) => void, max = 0): Promise<number> {
+async function importNativeGallery(onProgress?: (done: number, total: number) => void, max = 0): Promise<{ inserted: number; total: number }> {
   const batchSize = 60;
   let offset = 0;
   let inserted = 0;
@@ -110,7 +104,7 @@ async function importNativeGallery(onProgress?: (done: number, total: number) =>
   }
 
   onProgress?.(total, total);
-  return inserted;
+  return { inserted, total };
 }
 
 /**
@@ -135,11 +129,11 @@ export async function scanDeviceGallery(
   let picked: { webPath?: string; format?: string; path?: string }[] = [];
   try {
     try {
-      const inserted = await importNativeGallery(onProgress, max);
-      logNative("scan", "native full-gallery import complete", { inserted });
-      if (inserted > 0) {
-        logIdb("assets", `inserted ${inserted} native gallery assets`);
-        return inserted;
+      const nativeResult = await importNativeGallery(onProgress, max);
+      logNative("scan", "native full-gallery import complete", nativeResult);
+      if (nativeResult.total > 0) {
+        if (nativeResult.inserted > 0) logIdb("assets", `inserted ${nativeResult.inserted} native gallery assets`);
+        return nativeResult.inserted;
       }
     } catch (e) {
       logNative("scan", "native full-gallery import failed; falling back to picker", e);
