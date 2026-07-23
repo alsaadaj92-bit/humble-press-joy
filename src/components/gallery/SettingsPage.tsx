@@ -9,6 +9,7 @@ import { useSyncSettings } from "@/hooks/useSyncEngine";
 import { setSyncSettings } from "@/lib/syncEngine";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { cn } from "@/lib/utils";
+import { checkForUpdate, launchApkInstall, type UpdateInfo } from "@/lib/ota";
 
 interface Props { onBack: () => void }
 
@@ -20,6 +21,8 @@ export function SettingsPage({ onBack }: Props) {
   const [botToken, setBotToken] = useState(tg?.botToken ?? "");
   const [chatId, setChatId] = useState(tg?.chatId ?? "");
   const [testing, setTesting] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
   useEffect(() => {
     if (tg?.botToken != null) setBotToken(tg.botToken);
@@ -53,6 +56,18 @@ export function SettingsPage({ onBack }: Props) {
   const reset = async () => {
     await photoDb.delete();
     location.reload();
+  };
+
+  const checkUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const info = await checkForUpdate();
+      setUpdateInfo(info);
+      if (info.available) toast.success("يوجد تحديث جديد");
+      else toast.info("لا يوجد تحديث أحدث حالياً");
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   return (
@@ -142,6 +157,38 @@ export function SettingsPage({ onBack }: Props) {
                   className="w-full"
                 />
               </div>
+            )}
+          </div>
+        </section>
+
+        {/* Updates */}
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="mb-2 text-sm font-bold">تحديث التطبيق</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            يتحقق من آخر APK مبني في GitHub ويفتح مُثبّت أندرويد مباشرة. إذا ظهر خطأ توقيع، يجب تثبيت كل الإصدارات القادمة من نفس GitHub Action.
+          </p>
+          {updateInfo && (
+            <div className="mb-3 rounded-xl bg-secondary p-3 text-xs">
+              الحالي: {updateInfo.currentVersion}
+              {updateInfo.latestVersion ? ` · الأخير: ${updateInfo.latestVersion}` : ""}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={checkUpdate}
+              disabled={checkingUpdate}
+              className="flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {checkingUpdate && <Loader2 className="h-4 w-4 animate-spin" />}
+              فحص التحديث
+            </button>
+            {updateInfo?.available && updateInfo.apkUrl && (
+              <button
+                onClick={() => launchApkInstall(updateInfo.apkUrl!)}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                تثبيت التحديث
+              </button>
             )}
           </div>
         </section>

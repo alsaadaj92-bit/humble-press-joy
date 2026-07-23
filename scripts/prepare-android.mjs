@@ -4,7 +4,7 @@
 // patches AndroidManifest.xml with every permission the app needs.
 // Run: npm run android
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const run = (cmd) => {
@@ -13,6 +13,17 @@ const run = (cmd) => {
 };
 
 const ANDROID_DIR = resolve("android");
+const APP_ID = "app.lovable.c24377afd98c4f369655506b4b645da8";
+const PACKAGE_DIR = APP_ID.replaceAll(".", "/");
+
+const writeIfChanged = (path, content) => {
+  mkdirSync(resolve(path, ".."), { recursive: true });
+  if (!existsSync(path) || readFileSync(path, "utf8") !== content) {
+    writeFileSync(path, content);
+    return true;
+  }
+  return false;
+};
 
 if (!existsSync(ANDROID_DIR)) {
   console.log("📱 android/ folder not found — adding platform...");
@@ -71,15 +82,368 @@ const missing = PERMS.filter((p) => {
 if (missing.length) {
   const block = missing.join("\n    ");
   xml = xml.replace(/<application\b/, `${block}\n\n    <application`);
-  writeFileSync(manifestPath, xml);
   added = missing.length;
 }
 
+const providerBlock = `
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="\${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>`;
+
+if (!xml.includes("android.support.FILE_PROVIDER_PATHS")) {
+  xml = xml.replace(/\s*<\/application>/, `${providerBlock}\n    </application>`);
+  added++;
+}
+
+writeFileSync(manifestPath, xml);
+
+const filePathsPath = resolve("android/app/src/main/res/xml/file_paths.xml");
+writeIfChanged(filePathsPath, `<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="cache" path="." />
+    <external-files-path name="external_files" path="." />
+</paths>
+`);
+
+// ---- Native Android bridge: real MediaStore gallery scanner + internal APK installer
+const javaDir = resolve(`android/app/src/main/java/${PACKAGE_DIR}`);
+const pluginPath = resolve(javaDir, "LocalGalleryMediaPlugin.java");
+const mainActivityPath = resolve(javaDir, "MainActivity.java");
+
+writeIfChanged(pluginPath, `package ${APP_ID};
+
+import android.Manifest;
+import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.provider.Settings;
+import android.webkit.URLUtil;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+
+import com.getcapacitor.Bridge;
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
+@CapacitorPlugin(
+    name = "LocalGalleryMedia",
+    permissions = {
+        @Permission(strings = { Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO }, alias = "media13"),
+        @Permission(strings = { Manifest.permission.READ_EXTERNAL_STORAGE }, alias = "mediaLegacy")
+    }
+)
+public class LocalGalleryMediaPlugin extends Plugin {
+    private static class AssetRow {
+        String id;
+        String name;
+        String mime;
+        long size;
+        long date;
+        int width;
+        int height;
+        long duration;
+        String kind;
+        Uri uri;
+    }
+
+    private boolean hasGalleryAccess() {
+        Context ctx = getContext();
+        if (Build.VERSION.SDK_INT >= 33) {
+            boolean images = ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED;
+            boolean videos = ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED;
+            boolean selected = true;
+            if (Build.VERSION.SDK_INT >= 34) {
+                selected = ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED;
+            }
+            return images || videos || selected;
+        }
+        return ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private JSObject permissionResult() {
+        JSObject ret = new JSObject();
+        ret.put("media", hasGalleryAccess() ? PermissionState.GRANTED.toString() : PermissionState.PROMPT.toString());
+        return ret;
+    }
+
+    @PluginMethod
+    public void checkGalleryPermissions(PluginCall call) {
+        call.resolve(permissionResult());
+    }
+
+    @PluginMethod
+    public void requestGalleryPermissions(PluginCall call) {
+        if (hasGalleryAccess()) {
+            call.resolve(permissionResult());
+            return;
+        }
+        requestPermissionForAlias(Build.VERSION.SDK_INT >= 33 ? "media13" : "mediaLegacy", call, "galleryPermsCallback");
+    }
+
+    @PermissionCallback
+    private void galleryPermsCallback(PluginCall call) {
+        call.resolve(permissionResult());
+    }
+
+    private int getInt(Cursor c, String col) {
+        int i = c.getColumnIndex(col);
+        if (i < 0 || c.isNull(i)) return 0;
+        return c.getInt(i);
+    }
+
+    private long getLong(Cursor c, String col) {
+        int i = c.getColumnIndex(col);
+        if (i < 0 || c.isNull(i)) return 0L;
+        return c.getLong(i);
+    }
+
+    private String getString(Cursor c, String col) {
+        int i = c.getColumnIndex(col);
+        if (i < 0 || c.isNull(i)) return "";
+        return c.getString(i);
+    }
+
+    private void queryImages(ArrayList<AssetRow> rows) {
+        String[] projection = new String[] {
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DISPLAY_NAME,
+            MediaStore.Images.Media.MIME_TYPE,
+            MediaStore.Images.Media.SIZE,
+            MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.DATE_MODIFIED,
+            MediaStore.Images.Media.WIDTH,
+            MediaStore.Images.Media.HEIGHT
+        };
+        Cursor cursor = getContext().getContentResolver().query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            null,
+            null,
+            MediaStore.Images.Media.DATE_TAKEN + " DESC"
+        );
+        if (cursor == null) return;
+        try {
+            while (cursor.moveToNext()) {
+                long mediaId = getLong(cursor, MediaStore.Images.Media._ID);
+                long taken = getLong(cursor, MediaStore.Images.Media.DATE_TAKEN);
+                long modified = getLong(cursor, MediaStore.Images.Media.DATE_MODIFIED) * 1000L;
+                AssetRow row = new AssetRow();
+                row.kind = "image";
+                row.id = "image-" + mediaId;
+                row.name = getString(cursor, MediaStore.Images.Media.DISPLAY_NAME);
+                if (row.name.length() == 0) row.name = row.id + ".jpg";
+                row.mime = getString(cursor, MediaStore.Images.Media.MIME_TYPE);
+                if (row.mime.length() == 0) row.mime = "image/*";
+                row.size = getLong(cursor, MediaStore.Images.Media.SIZE);
+                row.date = taken > 0 ? taken : modified;
+                row.width = getInt(cursor, MediaStore.Images.Media.WIDTH);
+                row.height = getInt(cursor, MediaStore.Images.Media.HEIGHT);
+                row.duration = 0;
+                row.uri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(mediaId));
+                rows.add(row);
+            }
+        } finally {
+            cursor.close();
+        }
+    }
+
+    private void queryVideos(ArrayList<AssetRow> rows) {
+        String[] projection = new String[] {
+            MediaStore.Video.Media._ID,
+            MediaStore.Video.Media.DISPLAY_NAME,
+            MediaStore.Video.Media.MIME_TYPE,
+            MediaStore.Video.Media.SIZE,
+            MediaStore.Video.Media.DATE_TAKEN,
+            MediaStore.Video.Media.DATE_MODIFIED,
+            MediaStore.Video.Media.WIDTH,
+            MediaStore.Video.Media.HEIGHT,
+            MediaStore.Video.Media.DURATION
+        };
+        Cursor cursor = getContext().getContentResolver().query(
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            null,
+            null,
+            MediaStore.Video.Media.DATE_TAKEN + " DESC"
+        );
+        if (cursor == null) return;
+        try {
+            while (cursor.moveToNext()) {
+                long mediaId = getLong(cursor, MediaStore.Video.Media._ID);
+                long taken = getLong(cursor, MediaStore.Video.Media.DATE_TAKEN);
+                long modified = getLong(cursor, MediaStore.Video.Media.DATE_MODIFIED) * 1000L;
+                AssetRow row = new AssetRow();
+                row.kind = "video";
+                row.id = "video-" + mediaId;
+                row.name = getString(cursor, MediaStore.Video.Media.DISPLAY_NAME);
+                if (row.name.length() == 0) row.name = row.id + ".mp4";
+                row.mime = getString(cursor, MediaStore.Video.Media.MIME_TYPE);
+                if (row.mime.length() == 0) row.mime = "video/*";
+                row.size = getLong(cursor, MediaStore.Video.Media.SIZE);
+                row.date = taken > 0 ? taken : modified;
+                row.width = getInt(cursor, MediaStore.Video.Media.WIDTH);
+                row.height = getInt(cursor, MediaStore.Video.Media.HEIGHT);
+                row.duration = getLong(cursor, MediaStore.Video.Media.DURATION) / 1000L;
+                row.uri = Uri.withAppendedPath(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, String.valueOf(mediaId));
+                rows.add(row);
+            }
+        } finally {
+            cursor.close();
+        }
+    }
+
+    private String toWebPath(Uri uri) {
+        String localUrl = getBridge().getLocalUrl();
+        String raw = uri.toString().replace("content:/", "");
+        return localUrl + Bridge.CAPACITOR_CONTENT_START + raw;
+    }
+
+    @PluginMethod
+    public void scanGallery(PluginCall call) {
+        if (!hasGalleryAccess()) {
+            call.reject("gallery permission is required");
+            return;
+        }
+        int offset = Math.max(0, call.getInt("offset", 0));
+        int limit = Math.max(1, call.getInt("limit", 80));
+
+        ArrayList<AssetRow> rows = new ArrayList<>();
+        queryImages(rows);
+        queryVideos(rows);
+        Collections.sort(rows, new Comparator<AssetRow>() {
+            @Override public int compare(AssetRow a, AssetRow b) {
+                return Long.compare(b.date, a.date);
+            }
+        });
+
+        JSArray items = new JSArray();
+        int end = Math.min(rows.size(), offset + limit);
+        for (int i = offset; i < end; i++) {
+            AssetRow row = rows.get(i);
+            JSObject obj = new JSObject();
+            obj.put("id", row.id);
+            obj.put("name", row.name);
+            obj.put("mime", row.mime);
+            obj.put("size", row.size);
+            obj.put("date", row.date > 0 ? row.date : System.currentTimeMillis());
+            obj.put("width", row.width);
+            obj.put("height", row.height);
+            obj.put("duration", row.duration);
+            obj.put("kind", row.kind);
+            obj.put("webPath", toWebPath(row.uri));
+            items.put(obj);
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("total", rows.size());
+        ret.put("items", items);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void installApk(PluginCall call) {
+        String url = call.getString("url", "");
+        if (url.length() == 0) {
+            call.reject("Missing APK URL");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
+            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(settings);
+            call.reject("Allow install unknown apps for LocalGallery Pro, then press update again.");
+            return;
+        }
+
+        try {
+            String fileName = URLUtil.guessFileName(url, null, "application/vnd.android.package-archive");
+            if (!fileName.endsWith(".apk")) fileName = "localgallery-update.apk";
+            File dir = getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (dir == null) dir = getContext().getCacheDir();
+            File apk = new File(dir, fileName);
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestProperty("Accept", "application/vnd.android.package-archive,*/*");
+            conn.connect();
+            if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 300) {
+                call.reject("APK download failed: HTTP " + conn.getResponseCode());
+                return;
+            }
+            try (InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(apk)) {
+                byte[] buffer = new byte[1024 * 64];
+                int read;
+                while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            } finally {
+                conn.disconnect();
+            }
+
+            Uri apkUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+
+            JSObject ret = new JSObject();
+            ret.put("ok", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Install failed: " + e.getMessage(), e);
+        }
+    }
+}
+`);
+
+writeIfChanged(mainActivityPath, `package ${APP_ID};
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(LocalGalleryMediaPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+`);
+
 console.log(
   added
-    ? `\n✅ Patched AndroidManifest.xml — added ${added} permission(s).`
-    : `\n✅ AndroidManifest.xml already had every required permission.`,
+    ? `\n✅ Patched AndroidManifest.xml — added ${added} item(s).`
+    : `\n✅ AndroidManifest.xml already had every required item.`,
 );
+
+console.log("\n✅ Native LocalGalleryMedia plugin is installed for Android builds.");
 
 console.log(
   "\n🎉 Ready! Open Android Studio with:\n" +
