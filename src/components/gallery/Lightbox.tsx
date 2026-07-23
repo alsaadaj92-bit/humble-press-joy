@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ZoomableImage } from "./ZoomableImage";
 import { runViewTransition } from "@/lib/viewTransition";
 import { pushBackHandler } from "@/lib/backStack";
-import { isNative, saveBlobToDevice } from "@/lib/native";
+import { isNative, saveBlobToDevice, downloadUrlToDevice } from "@/lib/native";
 
 interface LightboxProps {
   photos: MockPhoto[];
