@@ -73,6 +73,27 @@ async function insertFileAsset(file: File, id: string, meta?: Partial<NativeGall
   return true;
 }
 
+async function insertNativeAsset(item: NativeGalleryAsset): Promise<boolean> {
+  const id = `device-${item.id}`;
+  if (await photoDb.assets.get(id)) return false;
+  const asset: MediaAsset = {
+    id,
+    provider: "device",
+    name: item.name,
+    size: item.size,
+    mime: item.mime || (item.kind === "video" ? "video/*" : "image/*"),
+    width: item.width,
+    height: item.height,
+    date: item.date || Date.now(),
+    createdAt: Date.now(),
+    kind: item.kind,
+    duration: item.duration,
+    localUri: item.webPath,
+  };
+  await photoDb.assets.put(asset);
+  return true;
+}
+
 async function importNativeGallery(onProgress?: (done: number, total: number) => void, max = 0): Promise<{ inserted: number; total: number }> {
   const batchSize = 60;
   let offset = 0;
@@ -89,13 +110,7 @@ async function importNativeGallery(onProgress?: (done: number, total: number) =>
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       onProgress?.(Math.min(offset + i, total), total);
-      const file = await uriToFile(item.webPath, item.name);
-      if (!file) continue;
-      const imported = await insertFileAsset(
-        file,
-        `device-${item.id}`,
-        { ...item, date: item.date || file.lastModified },
-      );
+      const imported = await insertNativeAsset(item);
       if (imported) inserted++;
     }
 

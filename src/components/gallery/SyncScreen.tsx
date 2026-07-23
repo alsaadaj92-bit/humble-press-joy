@@ -32,7 +32,7 @@ export function SyncScreen() {
   }, [assets]);
 
   const photos = useMemo<MockPhoto[]>(() => assets.map((a) => {
-    const url = urls.get(a.id);
+    const url = urls.get(a.id) ?? a.localUri;
     return {
       id: a.id, seed: a.id,
       width: a.width ?? 400, height: a.height ?? 400,
