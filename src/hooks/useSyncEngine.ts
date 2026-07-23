@@ -41,12 +41,16 @@ export function useSyncLoop() {
   const settings = useSyncSettings();
   useEffect(() => {
     if (settings.paused || settings.mode !== "auto") return;
+    // Trigger when new device assets appear.
     const sub = liveQuery(() =>
       photoDb.assets.where("provider").equals("device").count(),
     ).subscribe({
       next: () => { void runSyncCycle(); },
     });
-    return () => sub.unsubscribe();
+    // Periodic tick so uploads resume even without new imports (e.g. after
+    // network came back, or a failed cycle left items behind).
+    const tick = window.setInterval(() => { void runSyncCycle(); }, 60_000);
+    return () => { sub.unsubscribe(); window.clearInterval(tick); };
   }, [settings.paused, settings.mode]);
 
   useEffect(() => {
@@ -54,4 +58,31 @@ export function useSyncLoop() {
     window.addEventListener("online", on);
     return () => window.removeEventListener("online", on);
   }, []);
+
+  // Listen for pause/resume/stop actions coming from the persistent notification.
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;
+        const { registerPlugin } = await import("@capacitor/core");
+        const plugin = registerPlugin<{
+          addListener(
+            event: "syncCommand",
+            cb: (data: { action: "pause" | "resume" | "stop" }) => void,
+          ): Promise<{ remove: () => Promise<void> }>;
+        }>("LocalGalleryMedia");
+        const handle = await plugin.addListener("syncCommand", async ({ action }) => {
+          const { setSyncSettings, runSyncCycle } = await import("@/lib/syncEngine");
+          if (action === "pause") await setSyncSettings({ paused: true });
+          else if (action === "resume") { await setSyncSettings({ paused: false }); void runSyncCycle(); }
+          else if (action === "stop") await setSyncSettings({ paused: true });
+        });
+        cleanup = () => { void handle.remove(); };
+      } catch { /* web / plugin missing */ }
+    })();
+    return () => { cleanup?.(); };
+  }, []);
 }
+
