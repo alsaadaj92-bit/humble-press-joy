@@ -25,7 +25,7 @@ async function uriToFile(webPath: string, fallbackName: string): Promise<File | 
     const name = fallbackName.includes(".") ? fallbackName : `${fallbackName}.${ext}`;
     return new File([blob], name, { type: blob.type || `image/${ext}`, lastModified: Date.now() });
   } catch (e) {
-    logNative("scan", "uriToFile failed", { webPath, err: String(e) }, "warn");
+    logNative("scan", "uriToFile failed", { webPath, err: String(e) });
     return null;
   }
 }
@@ -45,7 +45,7 @@ export async function scanDeviceGallery(
 
   const granted = await requestGalleryPermission().catch(() => false);
   if (!granted) {
-    logNative("scan", "gallery permission not granted — abort", undefined, "warn");
+    logNative("scan", "gallery permission not granted — abort");
     return 0;
   }
 
@@ -54,7 +54,7 @@ export async function scanDeviceGallery(
     const res = await Camera.pickImages({ quality: 92, limit: max });
     picked = res.photos ?? [];
   } catch (e) {
-    logNative("scan", "pickImages failed", e, "error");
+    logNative("scan", "pickImages failed", e);
     return 0;
   }
 
