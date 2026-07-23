@@ -80,12 +80,37 @@ export function SettingsPage({ onBack }: Props) {
       </header>
 
       <div className="mx-auto max-w-2xl space-y-6 p-4">
+        {/* How it works */}
+        <section className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-xs leading-relaxed">
+          <h2 className="mb-2 text-sm font-bold text-primary">كيف يعمل التطبيق؟</h2>
+          <ol className="list-decimal space-y-1.5 pr-4 text-foreground">
+            <li>يستورد صور/فيديوهات المعرض من زر «+» في تبويب المزامنة.</li>
+            <li>يرفعها إلى بوت تليكرام الخاص بك (يدوي أو تلقائي).</li>
+            <li>بعد المزامنة يمكنك حذفها من الاستوديو لتوفير المساحة.</li>
+            <li>تبويب «معرض تليكرام» يعرض كل صورة رُفعت (حتى المرفوعة قبلاً).</li>
+          </ol>
+        </section>
+
         {/* Bot */}
         <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-1 text-sm font-bold">بوت تليكرام</h2>
-          <p className="mb-3 text-[11px] text-muted-foreground">
-            أنشئ بوتاً عبر @BotFather وأضفه لمجموعتك، ثم أرسل رسالة للبوت واستخرج chat_id عبر @userinfobot.
-          </p>
+          <h2 className="mb-1 text-sm font-bold">إعداد بوت تليكرام</h2>
+          <details className="mb-3 rounded-lg bg-secondary/50 p-3 text-[11px] leading-relaxed">
+            <summary className="cursor-pointer font-semibold text-foreground">شرح خطوة بخطوة (اضغط)</summary>
+            <ol className="mt-2 list-decimal space-y-1.5 pr-4 text-muted-foreground">
+              <li>افتح <b>@BotFather</b> في تليكرام واكتب <code dir="ltr">/newbot</code>، سيعطيك <b>Bot Token</b>.</li>
+              <li>
+                <b>مهم جداً:</b> اكتب <code dir="ltr">/setprivacy</code> في BotFather → اختر البوت → اضغط <b>Disable</b>.
+                بدون هذه الخطوة، البوت لن يرى الرسائل داخل المجموعة حتى لو كان أدمن!
+              </li>
+              <li>أضف البوت لمجموعتك واجعله أدمن.</li>
+              <li>أرسل أي رسالة في المجموعة، ثم افتح رابط: <code className="break-all" dir="ltr">https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> وانسخ <code dir="ltr">chat.id</code> (رقم سالب للمجموعات).</li>
+              <li>ألصق التوكن والـ Chat ID أدناه واضغط «اختبار الاتصال».</li>
+            </ol>
+            <p className="mt-2 text-yellow-400">
+              ⚠️ الصور القديمة المرسلة قبل إضافة البوت لا يمكن استرجاعها — قيد من تليكرام. لعرضها: أعد توجيهها للبوت مباشرة.
+            </p>
+          </details>
+
           <div className="space-y-2">
             <label className="block text-xs font-medium text-muted-foreground">Bot Token</label>
             <input
