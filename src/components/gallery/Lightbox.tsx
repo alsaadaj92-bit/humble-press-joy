@@ -110,6 +110,21 @@ export function Lightbox({ photos, index, onClose, onIndexChange, showDownload }
   if (!photo) return null;
 
   const isVideo = photo.kind === "video";
+  const isHeic = /image\/(heic|heif)/i.test(photo.mime ?? "");
+
+  const openExternally = async () => {
+    if (!photo.fullSrc) return;
+    const filename = photo.name || `media-${Date.now()}`;
+    try {
+      if (isNative()) {
+        const path = await downloadUrlToDevice(photo.fullSrc, filename);
+        if (path) { toast.success("حُفظ في المستندات — افتحه من مدير الملفات"); return; }
+      }
+      window.open(photo.fullSrc, "_blank");
+    } catch (e) {
+      toast.error("تعذّر الفتح: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-black/95 backdrop-blur safe-top safe-bottom">
@@ -124,15 +139,27 @@ export function Lightbox({ photos, index, onClose, onIndexChange, showDownload }
         <div className="text-xs text-white/70">
           {index + 1} / {photos.length}
         </div>
-        {showDownload ? (
-          <button
-            onClick={download}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
-            aria-label="تنزيل"
-          >
-            <Download className="h-5 w-5" />
-          </button>
-        ) : <div className="h-10 w-10" />}
+        <div className="flex items-center gap-2">
+          {(isVideo || isHeic) && (
+            <button
+              onClick={openExternally}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              aria-label="فتح خارجياً"
+              title="فتح خارجياً"
+            >
+              <ExternalLink className="h-5 w-5" />
+            </button>
+          )}
+          {showDownload ? (
+            <button
+              onClick={download}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              aria-label="تنزيل"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+          ) : <div className="h-10 w-10" />}
+        </div>
       </div>
 
       <div
@@ -151,12 +178,35 @@ export function Lightbox({ photos, index, onClose, onIndexChange, showDownload }
           {isVideo && photo.fullSrc ? (
             <video
               src={photo.fullSrc}
+              poster={photo.posterSrc}
               controls
               autoPlay
               playsInline
+              preload="metadata"
               className="max-h-full max-w-full rounded-lg shadow-2xl"
               style={{ viewTransitionName: `photo-${photo.id}` }}
+              onError={() =>
+                toast.error("تعذّر تشغيل الفيديو في المتصفح — استخدم زر الفتح الخارجي")
+              }
             />
+          ) : isHeic && photo.fullSrc ? (
+            <div className="flex flex-col items-center gap-3 p-6 text-center text-white/80">
+              <img
+                src={photo.posterSrc ?? photo.fullSrc}
+                alt={photo.name}
+                className="max-h-[70vh] max-w-full rounded-lg shadow-2xl"
+                style={{ viewTransitionName: `photo-${photo.id}` }}
+              />
+              <p className="text-xs text-white/60">
+                هذه صورة HEIC — المتصفح لا يعرضها بجودتها الأصلية.
+              </p>
+              <button
+                onClick={openExternally}
+                className="flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold"
+              >
+                <ExternalLink className="h-4 w-4" /> فتح بالحجم الأصلي
+              </button>
+            </div>
           ) : photo.fullSrc ? (
             <div className="h-full w-full" style={{ viewTransitionName: `photo-${photo.id}` }}>
               <ZoomableImage
