@@ -11,12 +11,14 @@ import { logNative } from "@/lib/diagnostics";
 const OFFSET_KEY = "tg:updates:offset";
 
 interface TelegramMessagePhoto { file_id: string; width: number; height: number; file_size?: number }
+interface TelegramThumb { file_id?: string; width?: number; height?: number }
 interface TelegramMessageDocument {
   file_id: string;
   file_name?: string;
   mime_type?: string;
   file_size?: number;
-  thumb?: { width: number; height: number };
+  thumb?: TelegramThumb;
+  thumbnail?: TelegramThumb;
 }
 interface TelegramMessageVideo {
   file_id: string;
@@ -25,6 +27,8 @@ interface TelegramMessageVideo {
   duration?: number;
   mime_type?: string;
   file_size?: number;
+  thumb?: TelegramThumb;
+  thumbnail?: TelegramThumb;
 }
 interface RawUpdate {
   update_id: number;
@@ -38,6 +42,8 @@ interface RawUpdate {
   };
   channel_post?: RawUpdate["message"];
 }
+
+const thumbId = (t?: TelegramThumb | null) => t?.file_id;
 
 async function insertFromUpdate(u: RawUpdate) {
   const msg = u.message ?? u.channel_post;
@@ -86,6 +92,7 @@ async function insertFromUpdate(u: RawUpdate) {
     await put({
       id: `tg-${msg.document.file_id}`,
       remoteFileId: msg.document.file_id,
+      thumbFileId: thumbId(msg.document.thumb ?? msg.document.thumbnail),
       width: msg.document.thumb?.width,
       height: msg.document.thumb?.height,
       size: msg.document.file_size ?? 0,
@@ -98,6 +105,7 @@ async function insertFromUpdate(u: RawUpdate) {
     await put({
       id: `tg-${msg.document.file_id}`,
       remoteFileId: msg.document.file_id,
+      thumbFileId: thumbId(msg.document.thumb ?? msg.document.thumbnail),
       size: msg.document.file_size ?? 0,
       name: msg.document.file_name ?? `tg-${msg.document.file_id.slice(0, 8)}`,
       kind: "video",
@@ -108,6 +116,7 @@ async function insertFromUpdate(u: RawUpdate) {
     await put({
       id: `tg-${msg.video.file_id}`,
       remoteFileId: msg.video.file_id,
+      thumbFileId: thumbId(msg.video.thumb ?? msg.video.thumbnail),
       width: msg.video.width,
       height: msg.video.height,
       duration: msg.video.duration,
