@@ -132,8 +132,10 @@ writeIfChanged(pluginPath, `package ${APP_ID};
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -175,6 +177,34 @@ import java.util.Comparator;
     }
 )
 public class LocalGalleryMediaPlugin extends Plugin {
+    private BroadcastReceiver commandReceiver;
+
+    @Override
+    public void load() {
+        super.load();
+        commandReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) {
+                String action = i.getStringExtra("action");
+                if (action == null) return;
+                JSObject data = new JSObject();
+                data.put("action", action);
+                notifyListeners("syncCommand", data);
+            }
+        };
+        IntentFilter f = new IntentFilter(SyncForegroundService.BROADCAST_COMMAND);
+        if (Build.VERSION.SDK_INT >= 33) {
+            getContext().registerReceiver(commandReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            getContext().registerReceiver(commandReceiver, f);
+        }
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        try { if (commandReceiver != null) getContext().unregisterReceiver(commandReceiver); } catch (Exception ignored) {}
+        super.handleOnDestroy();
+    }
+
     private static class AssetRow {
         String id;
         String name;
@@ -187,6 +217,7 @@ public class LocalGalleryMediaPlugin extends Plugin {
         String kind;
         Uri uri;
     }
+
 
     private boolean hasGalleryAccess() {
         Context ctx = getContext();
