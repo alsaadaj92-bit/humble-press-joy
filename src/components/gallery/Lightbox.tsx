@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ZoomableImage } from "./ZoomableImage";
 import { runViewTransition } from "@/lib/viewTransition";
 import { pushBackHandler } from "@/lib/backStack";
-import { isNative, saveBlobToDevice } from "@/lib/native";
+import { isNative, saveBlobToDevice, downloadUrlToDevice } from "@/lib/native";
 
 interface LightboxProps {
   photos: MockPhoto[];
@@ -80,10 +80,18 @@ export function Lightbox({ photos, index, onClose, onIndexChange, showDownload }
 
   const download = async () => {
     if (!photo?.fullSrc) return;
+    const filename = photo.name || `photo-${Date.now()}.jpg`;
     try {
+      // On native Android, WebView `fetch()` frequently fails for large
+      // Telegram file URLs with "Failed to fetch". Prefer the native
+      // Filesystem downloader which uses a real HTTP client.
+      if (isNative() && /^https?:/i.test(photo.fullSrc)) {
+        const path = await downloadUrlToDevice(photo.fullSrc, filename);
+        if (path) { toast.success("حُفظ في المستندات"); return; }
+      }
       const res = await fetch(photo.fullSrc);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
-      const filename = photo.name || `photo-${Date.now()}.jpg`;
       if (isNative()) {
         const uri = await saveBlobToDevice(filename, blob);
         if (uri) { toast.success("حُفظ في المستندات"); return; }
