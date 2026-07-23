@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, X } from "lucide-react";
 import { toast } from "sonner";
 import type { MockPhoto } from "@/lib/mockPhotos";
 import { cn } from "@/lib/utils";
