@@ -89,6 +89,7 @@ async function uploadOne(asset: MediaAsset, botToken: string, chatId: string, fr
   const file = new File([blob], asset.name, { type: asset.mime || blob.type || "application/octet-stream" });
   const res = await telegramSendDocument(botToken, chatId, file);
   const patch: Partial<MediaAsset> = {
+    provider: "telegram-remote",
     syncedAt: Date.now(),
     remoteFileId: res.fileId,
     remoteMessageId: res.messageId,

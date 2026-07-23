@@ -45,6 +45,16 @@ async function insertFromUpdate(u: RawUpdate) {
   const date = (msg.date ?? Math.floor(Date.now() / 1000)) * 1000;
 
   const put = async (partial: Partial<MediaAsset> & { id: string; remoteFileId: string }) => {
+    const syncedLocal = await photoDb.assets.where("remoteFileId").equals(partial.remoteFileId).first();
+    if (syncedLocal) {
+      const { id: _ignored, ...patch } = partial;
+      await photoDb.assets.update(syncedLocal.id, {
+        ...patch,
+        provider: "telegram-remote",
+        remoteMessageId: msg.message_id,
+      });
+      return;
+    }
     const existing = await photoDb.assets.get(partial.id);
     if (existing) return;
     const asset: MediaAsset = {
@@ -159,7 +169,7 @@ export function useTelegramFeed(enabled: boolean, intervalMs = 15000, trigger: n
 
 /** Resolve a full-size URL for a remote asset (getFile → file/bot). */
 export async function resolveRemoteUrl(asset: MediaAsset): Promise<string | null> {
-  if (asset.provider !== "telegram-remote" || !asset.remoteFileId) return null;
+  if (!asset.remoteFileId) return null;
   const cfg = await photoDb.providers.get("telegram");
   if (!cfg?.botToken) return null;
   if (asset.remoteFilePath) return telegramFileUrl(cfg.botToken, asset.remoteFilePath);
@@ -177,17 +187,17 @@ export function useRemoteAssetUrls(assets: MediaAsset[]): Map<string, string> {
       let changed = false;
       for (const a of assets) {
         if (next.has(a.id)) continue;
-        if (a.blob) {
-          next.set(a.id, URL.createObjectURL(a.blob));
-          changed = true;
-          continue;
-        }
-        if (a.provider === "telegram-remote") {
+        if (a.remoteFileId) {
           try {
             const url = await resolveRemoteUrl(a);
             if (cancelled) return;
             if (url) { next.set(a.id, url); changed = true; }
           } catch { /* skip */ }
+          continue;
+        }
+        if (a.blob) {
+          next.set(a.id, URL.createObjectURL(a.blob));
+          changed = true;
         }
       }
       if (changed && !cancelled) setUrls(next);
